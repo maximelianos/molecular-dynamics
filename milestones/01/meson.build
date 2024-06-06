@@ -1,3 +1,6 @@
+fs = import('fs')
+fs.copyfile('simulation_test_input.txt')
+
 executable(
 	'milestone01',
 	'main.cpp',

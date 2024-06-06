@@ -1,10 +1,19 @@
 #include "hello.h"
+#include <sys/param.h>
 #include <Eigen/Dense>
 #include <iostream>
 
 using Eigen::MatrixXd;
 
+std::string get_working_path()
+{
+    char temp[MAXPATHLEN];
+    return ( getcwd(temp, sizeof(temp)) ? std::string( temp ) : std::string("") );
+}
+
 void hello_eigen() {
+    std::cout << get_working_path() << std::endl;
+
     MatrixXd m(2, 2);
     m(0, 0) = 3;
     m(1, 0) = 2.5;

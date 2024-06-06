@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     if (rank == 0)
       hello_eigen();
 
-    auto input_path = "./simulation_test_input.txt";
+    auto input_path = "milestones/01/simulation_test_input.txt";
 
     if (not std::filesystem::exists(input_path))
       std::cerr << "warning: could not find input file " << input_path << "\n";

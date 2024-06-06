@@ -1,6 +1,9 @@
 # Custom files here
 *.xyz
 .idea
+subprojects/packagecache/
+subprojects/eigen-3.4.0/
+
 
 # -------------- Below are genereated exclusion patterns ----------------------
 
