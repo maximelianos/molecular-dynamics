@@ -9,6 +9,7 @@
 using Positions_t = Eigen::Array3Xd;
 using Velocities_t = Eigen::Array3Xd;
 using Forces_t = Eigen::Array3Xd;
+using Point_t = Eigen::Vector3d;
 
 struct Atoms {
     Positions_t positions;
@@ -32,7 +33,8 @@ struct Atoms {
 void verlet_step1(Atoms &atoms, double timestep, double mass);
 void verlet_step2(Atoms &atoms, double timestep, double mass);
 
-void run_simulation();
+void run_simulation(Atoms &atoms, int nb_steps);
+
 
 /*void verlet_step1(double &x, double &y, double &z, double &vx, double &vy, double &vz,
                   double fx, double fy, double fz, double timestep);
