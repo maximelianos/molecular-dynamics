@@ -26,13 +26,9 @@ TEST(VerletTest, ConstantForce) {
     atoms.forces(1, 1) = -0.5;
     atoms.forces(2, 1) = 0;
 
-    int nb_steps = 10;
-    // s = v_0 * t + (a * t^2) / 2
-    for (int i = 0; i < nb_steps; i++) {
-        verlet_step1(atoms, 1, 1);
-        verlet_step2(atoms, 1, 1);
-    }
+    run_simulation(atoms, 10, 1.0, 1.0);
 
+    // s = v_0 * t + (a * t^2) / 2
     // atom 1
     // x_1 = x_0 + s =
     // 1 + 0 + (1 * 100) / 2 = 51

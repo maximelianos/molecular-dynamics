@@ -1,7 +1,8 @@
 lib_sources = [  # All source files (excluding headers)
     'hello.cpp',
     'verlet.cpp',
-    'lj_direct_summation.cpp'
+    'lj_direct_summation.cpp',
+    'xyz.cpp'
 ]
 
 lib = static_library(

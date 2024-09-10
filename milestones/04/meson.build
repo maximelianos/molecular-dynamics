@@ -1,8 +1,8 @@
 fs = import('fs')
-copy = fs.copyfile('simulation_test_input.txt')
+fs.copyfile('lj54.xyz')
 
 executable(
-	'milestone01',
+	'milestone04',
 	'main.cpp',
 	include_directories : [lib_incdirs],
 	link_with : [lib],
