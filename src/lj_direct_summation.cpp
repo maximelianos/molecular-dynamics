@@ -10,9 +10,16 @@ double kinetic_energy(Atoms &atoms) {
     for (size_t i = 0; i < atoms.nb_atoms(); i++) {
         Point_t vel_i = atoms.velocities(Eigen::all, i);
         double m_i = 1;
-        energy += m_i * vel_i.norm();
+        energy += m_i * vel_i.squaredNorm();
     }
     return energy / 2;
+}
+
+double get_temperature(Atoms &atoms) {
+    double e_kin = kinetic_energy(atoms);
+    double k = 1.38e+4 / 1.66 / 197; // 1.38e-23 / (1 atom mass unit)
+    // E = 3/2 * NkT
+    return (2.0 / 3.0) * e_kin / atoms.nb_atoms() / k;
 }
 
 double lj_direct_summation(Atoms &atoms, double epsilon, double sigma) {
@@ -41,3 +48,7 @@ double lj_direct_summation(Atoms &atoms, double epsilon, double sigma) {
     }
     return energy;
 }
+
+void berendsen_thermostat(Atoms &atoms, double temperature, double timestep,
+                          double relaxation_time);
+

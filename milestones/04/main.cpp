@@ -25,9 +25,11 @@
 #include <iomanip>
 #include <iostream>
 
-#include "verlet.h"
 #include "lj_direct_summation.h"
+#include "verlet.h"
 #include "xyz.h"
+
+#include <thermostat.h>
 
 void write_energy(std::ofstream &file, double time, double energy) {
     file << std::setw(8) << time << " " << energy << "\n";
@@ -61,10 +63,12 @@ int main() {
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
+        berendsen_thermostat(atoms, 0.005, step_t, step_t * 100);
         // compute total energy
         double e = e_pot + e_kin;
         if (begin_t - last_print_t > print_freq_t) {
-            std::cout << "e_tot " << e << "\n";
+            double t = get_temperature(atoms);
+            std::cout << "e_tot " << e << " e_kin " << e_kin << " t " << t << "\n";
             // log total energy
             write_energy(energy_file, begin_t, e);
             write_energy(epot_file, begin_t, e_pot);
