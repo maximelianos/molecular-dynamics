@@ -29,7 +29,9 @@
 #include "lj_direct_summation.h"
 #include "xyz.h"
 
-
+void write_energy(std::ofstream &file, double time, double energy) {
+    file << std::setw(8) << time << " " << energy << "\n";
+}
 
 int main() {
     auto [names, positions, velocities]{read_xyz_with_velocities("lj54.xyz")};
@@ -43,20 +45,41 @@ int main() {
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
     double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
-    int steps = 0;
+    double last_print_t = 0;
+    double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
+    int print_i = 0;
+    std::ofstream energy_file("total_energy_001.txt");
+    std::ofstream epot_file("potential_energy_001.txt");
+    std::ofstream ekin_file("kinetic_energy_001.txt");
+
+    std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
-        steps += 1;
-
         // compute forces
         double e_pot = lj_direct_summation(atoms, epsilon, sigma);
+        double e_kin = kinetic_energy(atoms);
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
         // compute total energy
-        double e = e_pot + kinetic_energy(atoms);
-        if (steps % 100 == 0)
+        double e = e_pot + e_kin;
+        if (begin_t - last_print_t > print_freq_t) {
             std::cout << "e_tot " << e << "\n";
+            // log total energy
+            write_energy(energy_file, begin_t, e);
+            write_energy(epot_file, begin_t, e_pot);
+            write_energy(ekin_file, begin_t, e_kin);
+            // log positions of atoms
+            last_print_t = begin_t;
+            std::string num = std::to_string(print_i);
+            int num_zeros = 4;
+            std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
+            print_i += 1;
+            write_xyz(traj_file, atoms);
+        }
     }
+
+    energy_file.close();
+
     return 0;
 }

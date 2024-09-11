@@ -13,6 +13,13 @@ TEST(HelloTest, BasicAssertions) {
     hello_eigen();
 }
 
+TEST(HelloTest, IntToString) {
+    int x = 10;
+    std::string s;
+    s = std::to_string(x);
+    EXPECT_EQ(s, "10");
+}
+
 TEST(HelloTest, Norm3D) {
     Eigen::Vector3d a;
     a << 1, 0, 0;
@@ -21,3 +28,5 @@ TEST(HelloTest, Norm3D) {
     // norm = sqrt(1^2 + 1^2 + 0) = sqrt(2)
     ASSERT_FLOAT_EQ((a - b).norm(), std::sqrt(2));
 }
+
+

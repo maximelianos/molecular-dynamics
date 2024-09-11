@@ -10,7 +10,7 @@ double kinetic_energy(Atoms &atoms) {
     for (size_t i = 0; i < atoms.nb_atoms(); i++) {
         Point_t vel_i = atoms.velocities(Eigen::all, i);
         double m_i = 1;
-        energy += m_i * vel_i.squaredNorm();
+        energy += m_i * vel_i.norm();
     }
     return energy / 2;
 }
