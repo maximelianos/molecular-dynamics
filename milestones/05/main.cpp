@@ -45,7 +45,7 @@ int main() {
 
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
@@ -53,7 +53,7 @@ int main() {
     std::ofstream epot_file("potential_energy_001.txt");
     std::ofstream ekin_file("kinetic_energy_001.txt");
 
-    double equi_t = step_t * 100;
+    double equi_t = step_t * 1000;
 
     std::cout << "time step " << step_t << "\n";
 
@@ -68,12 +68,12 @@ int main() {
         double target_temp = 0.005;
         double relaxation_t;
         if (begin_t < equi_t) {
-            relaxation_t = step_t * 10;
+            relaxation_t = step_t * 1000;
         } else {
             relaxation_t = step_t * 1000;
         }
 
-        berendsen_thermostat(atoms, target_temp, step_t, step_t * 10);
+        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t);
 
         // compute total energy
         double e = e_pot + e_kin;

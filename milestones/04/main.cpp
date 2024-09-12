@@ -46,7 +46,7 @@ int main() {
 
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.00001 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
