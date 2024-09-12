@@ -5,7 +5,8 @@ lib_sources = [  # All source files (excluding headers)
     'xyz.cpp',
     'thermostat.cpp',
     'lattice.cpp',
-    'neighbors.cpp'
+    'neighbors.cpp',
+    'lj.cpp'
 ]
 
 lib = static_library(

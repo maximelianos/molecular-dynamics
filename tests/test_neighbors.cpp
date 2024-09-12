@@ -47,6 +47,7 @@ TEST(NeighborsTest, Test1) {
     EXPECT_EQ(neighbor_list.nb_neighbors(2), 2);
     EXPECT_EQ(neighbor_list.nb_neighbors(3), 2);
 
+    // seed takes the atom num and gives the index in the neighbour list
     EXPECT_TRUE((neighbors(Eigen::seq(seed(0), seed(1) - 1)) == Eigen::Array3i{3, 1, 2}).all());
     EXPECT_TRUE((neighbors(Eigen::seq(seed(1), seed(2) - 1)) == Eigen::Array3i{3, 0, 2}).all());
     EXPECT_TRUE((neighbors(Eigen::seq(seed(2), seed(3) - 1)) == Eigen::Array2i{0, 1}).all());
@@ -63,7 +64,7 @@ TEST(NeighborsTest, FirstAtomHasNoNeighbor) {
 
     Atoms atoms(names, positions);
     NeighborList neighbor_list;
-    neighbor_list.update(atoms);
+    neighbor_list.update(atoms, 5.0);
 
     auto &[seed, neighbors]{neighbor_list.update(atoms, 5.0)};
 
@@ -93,7 +94,7 @@ TEST(NeighborsTest, LastAtomHasNoNeighbor) {
 
     Atoms atoms(names, positions);
     NeighborList neighbor_list;
-    neighbor_list.update(atoms);
+    neighbor_list.update(atoms, 5.0);
 
     auto &[seed, neighbors]{neighbor_list.update(atoms, 5.0)};
 
@@ -122,7 +123,7 @@ TEST(NeighborsTest, AtomsHaveNoNeighbors) {
 
     Atoms atoms(names, positions);
     NeighborList neighbor_list;  // this is below the smallest distance
-    neighbor_list.update(atoms);
+    neighbor_list.update(atoms, 0.5);
 
     auto &[seed, neighbors]{neighbor_list.update(atoms, 0.5)};
 
