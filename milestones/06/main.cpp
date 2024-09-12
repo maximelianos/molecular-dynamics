@@ -38,14 +38,14 @@ void write_energy(std::ofstream &file, double time, double energy) {
 }
 
 int main() {
-    int n = 7;
+    int n = 6;
     double sigma = 2;
     double epsilon = 1;
     double m = 1;
 
     Atoms atoms = cubic_lattice(n, sigma);
 
-    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
+    double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
     double step_t = 0.0001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
@@ -71,12 +71,12 @@ int main() {
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
-        double target_temp = 0.005;
+        double target_temp = 0.00005;
         double relaxation_t;
         if (begin_t < equi_t) {
             relaxation_t = step_t * 100;
         } else {
-            relaxation_t = step_t * 100;
+            relaxation_t = step_t * 1000;
         }
 
         berendsen_thermostat(atoms, target_temp, step_t, relaxation_t);
