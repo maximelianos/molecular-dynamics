@@ -31,7 +31,7 @@
 
 
 // Type Names_t, if not defined use
-using Names_t = std::vector<std::string>;
+// using Names_t = std::vector<std::string>;
 
 /*
  * Read positions from an XYZ file. XYZ files are structured a follows:

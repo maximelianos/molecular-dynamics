@@ -5,7 +5,8 @@ test_sources = [
   'test_verlet.cpp',
   'gtest_mpi_main.cpp',
   'test_lj_direct_summation.cpp',
-  'test_thermostat.cpp'
+  'test_thermostat.cpp',
+  'test_neighbors.cpp'
 ]
 
 tests = executable(

@@ -7,6 +7,7 @@
 
 #include "Eigen/Core"
 
+using Names_t = std::vector<std::string>;
 using Positions_t = Eigen::Array3Xd;
 using Velocities_t = Eigen::Array3Xd;
 using Forces_t = Eigen::Array3Xd;
@@ -27,6 +28,14 @@ struct Atoms {
     }
 
     Atoms(Positions_t &pos) :
+          positions(pos),
+          velocities(3, pos.cols()),
+          forces(3, pos.cols()) {
+        velocities.setZero();
+        forces.setZero();
+    }
+
+    Atoms(Names_t &names, Positions_t &pos) :
           positions(pos),
           velocities(3, pos.cols()),
           forces(3, pos.cols()) {

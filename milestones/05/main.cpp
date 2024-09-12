@@ -28,25 +28,24 @@
 #include "lj_direct_summation.h"
 #include "verlet.h"
 #include "xyz.h"
-
-#include <thermostat.h>
+#include "thermostat.h"
+#include "lattice.h"
 
 void write_energy(std::ofstream &file, double time, double energy) {
     file << std::setw(8) << time << " " << energy << "\n";
 }
 
 int main() {
-    auto [names, positions, velocities]{read_xyz_with_velocities("lj54.xyz")};
-    Atoms atoms(positions);
-    atoms.velocities = velocities;
-
-    double sigma = 1;
+    int n = 4;
+    double sigma = 2;
     double epsilon = 1;
     double m = 1;
 
+    Atoms atoms = cubic_lattice(n, sigma);
+
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.00001 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
@@ -54,27 +53,41 @@ int main() {
     std::ofstream epot_file("potential_energy_001.txt");
     std::ofstream ekin_file("kinetic_energy_001.txt");
 
+    double equi_t = step_t * 100;
+
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
         // compute forces
         double e_pot = lj_direct_summation(atoms, epsilon, sigma);
         double e_kin = kinetic_energy(atoms);
+
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
+        double target_temp = 0.005;
+        double relaxation_t;
+        if (begin_t < equi_t) {
+            relaxation_t = step_t * 10;
+        } else {
+            relaxation_t = step_t * 1000;
+        }
+
+        berendsen_thermostat(atoms, target_temp, step_t, step_t * 10);
+
         // compute total energy
         double e = e_pot + e_kin;
         if (begin_t - last_print_t > print_freq_t) {
             double t = get_temperature(atoms);
-            std::cout << "e_pot " << std::setw(8) << e_pot
-                      << " e_kin " << std::setw(8) << e_kin
+            std::cout << "e_pot " << std::setw(12) << e_pot
+                      << " e_kin " << std::setw(12) << e_kin
                       << " t " << std::setw(4) << t << "\n";
 
             // log total energy
             write_energy(energy_file, begin_t, e);
             write_energy(epot_file, begin_t, e_pot);
             write_energy(ekin_file, begin_t, e_kin);
+
             // log positions of atoms
             last_print_t = begin_t;
             std::string num = std::to_string(print_i);
