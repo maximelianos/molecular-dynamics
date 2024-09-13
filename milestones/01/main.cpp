@@ -3,6 +3,8 @@
 #include <iostream>
 #include <filesystem>
 
+//#define USE_MPI
+
 #ifdef USE_MPI
 #include <mpi.h>
 #endif

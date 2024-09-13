@@ -39,56 +39,62 @@ void write_energy(std::ofstream &file, double time, double energy) {
 }
 
 int main() {
-    int n = 4;
-    double sigma = 2;
-    double epsilon = 1;
-    double m = 1;
+    double sigma = 3;
+    //double epsilon = 0.01;
+    double m = 197 * 103.6;
 
-    Atoms atoms = cubic_lattice(n, sigma);
+    auto [names, positions]{read_xyz("cluster_923.xyz")};
+    Atoms atoms(positions);
 
-    double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.0001 * std::sqrt(m * sigma * sigma / epsilon);
+    // double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
+    // double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
+    double end_t = 20000;
+    double step_t = 0.5;
+
     double last_print_t = 0;
-    double print_freq_t = 0.1 * std::sqrt(m * sigma * sigma / epsilon);
+    //double print_freq_t = 0.1 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
+    double print_freq_t = 200;
     int print_i = 0;
     std::ofstream energy_file("total_energy_001.txt");
     std::ofstream epot_file("potential_energy_001.txt");
     std::ofstream ekin_file("kinetic_energy_001.txt");
 
-    double equi_t = step_t * 1000;
+    double equi_t = step_t * 100;
 
     NeighborList neighbor_list;
-    neighbor_list.update(atoms, sigma * 6);
+    neighbor_list.update(atoms, 10.0);
 
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
         // compute forces
-        double e_pot = lj_neighbor_list(atoms, neighbor_list, epsilon, sigma);
+        //double e_pot = lj_neighbor_list(atoms, neighbor_list, epsilon, sigma);
         //double e_pot = ducastelle(atoms, neighbor_list, sigma * 6);
-        double e_kin = kinetic_energy(atoms);
+        double e_pot = ducastelle(atoms, neighbor_list);
+        double e_kin = kinetic_energy(atoms, m);
 
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
-        double target_temp = 0.00005;
+        double target_temp = 500;
         double relaxation_t;
         if (begin_t < equi_t) {
             relaxation_t = step_t * 100;
         } else {
-            relaxation_t = step_t * 1000;
+            relaxation_t = step_t * 10000;
         }
 
-        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t);
+        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
 
         // compute total energy
         double e = e_pot + e_kin;
         if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(atoms);
+            double t = get_temperature(atoms, m);
             std::cout << "e_pot " << std::setw(12) << e_pot
                       << " e_kin " << std::setw(12) << e_kin
-                      << " t " << std::setw(4) << t << "\n";
+                      << " e_tot " << std::setw(12) << e
+                      << " temp " << std::setw(4) << t << "\n";
 
             // log total energy
             write_energy(energy_file, begin_t, e);
@@ -104,7 +110,7 @@ int main() {
             write_xyz(traj_file, atoms);
 
             // update neighbors
-            neighbor_list.update(atoms, sigma * 3);
+            neighbor_list.update(atoms, 10.0);
         }
     }
 

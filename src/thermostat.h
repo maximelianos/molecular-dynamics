@@ -8,7 +8,7 @@
 #include "atoms.h"
 
 void berendsen_thermostat(Atoms &atoms, double temperature, double timestep,
-                          double relaxation_time);
+                          double relaxation_time, double mass=1.0);
 
 
 #endif //THERMOSTAT_H
