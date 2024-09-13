@@ -186,7 +186,7 @@ Testing the Berendsen implementation is very simple, because it modifies the spe
 
 \begin{figure*}[htb]
 	\centering
-	\includegraphics[width=.3\linewidth]{img/fig_quad_time.pdf}
+	\includegraphics[width=.3\linewidth]{img/fig_pairwise.pdf}
 	\caption{Time scales quadratically with number of atoms.}
 	\label{fig:berendsen_time}
 \end{figure*}
@@ -195,6 +195,15 @@ Testing the Berendsen implementation is very simple, because it modifies the spe
 
 \section*{Milestone 6. Neighbor list}
 
+\begin{figure*}[htb]
+	\centering
+	\includegraphics[width=.3\linewidth]{img/fig_neighbor.pdf}
+	\caption{Time scales linearly with number of atoms.}
+	\label{fig:berendsen_time}
+\end{figure*}
+
 Cutoff radius is \( 3 \sigma \) to allow speedup.
+
+{\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/05/main.cpp
 
 \end{document}

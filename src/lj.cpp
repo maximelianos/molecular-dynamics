@@ -4,7 +4,7 @@
 
 #include "lj.h"
 
-double lj_neighbor_list(Atoms &atoms, NeighborList &neighbor_list, double epsilon, double sigma) {
+double lj_neighbor_list(Atoms &atoms, NeighborList &neighbor_list, double cutoff, double epsilon, double sigma) {
     // compute atoms.forces
     // return potential energy
 
@@ -19,6 +19,10 @@ double lj_neighbor_list(Atoms &atoms, NeighborList &neighbor_list, double epsilo
             // compute potential energy
             energy += 4 * epsilon * (std::pow(sigma, 12) * std::pow(r.norm(), -12) -
                 std::pow(sigma, 6) * std::pow(r.norm(), -6));
+            
+            // add the value at cutoff!
+            energy += 4 * epsilon * (std::pow(sigma, 12) * std::pow(cutoff, -12) -
+                std::pow(sigma, 6) * std::pow(cutoff, -6));
 
             // compute gradient of energy - the force
             double lj = 4 * epsilon * (std::pow(sigma, 12) * (-12) * std::pow(r.norm(), -13) -

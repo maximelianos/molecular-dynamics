@@ -45,27 +45,28 @@ int main() {
 
     Atoms atoms = cubic_lattice(n, sigma);
 
-    double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon);
+    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.0001 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
-    double print_freq_t = 0.1 * std::sqrt(m * sigma * sigma / epsilon);
+    double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
     std::ofstream energy_file("total_energy_001.txt");
     std::ofstream epot_file("potential_energy_001.txt");
     std::ofstream ekin_file("kinetic_energy_001.txt");
 
     double equi_t = step_t * 1000;
+    double cutoff = sigma * 4;
 
     NeighborList neighbor_list;
-    neighbor_list.update(atoms, sigma * 6);
+    neighbor_list.update(atoms, cutoff);
 
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
         // compute forces
         //double e_pot = lj_direct_summation(atoms, epsilon, sigma);
-        double e_pot = lj_neighbor_list(atoms, neighbor_list, epsilon, sigma);
+        double e_pot = lj_neighbor_list(atoms, neighbor_list, cutoff, epsilon, sigma);
         double e_kin = kinetic_energy(atoms);
 
         // apply forces
@@ -74,9 +75,11 @@ int main() {
         double target_temp = 0.00005;
         double relaxation_t;
         if (begin_t < equi_t) {
-            relaxation_t = step_t * 100;
+            step_t = 0.0001 * std::sqrt(m * sigma * sigma / epsilon);
+            relaxation_t = step_t * 10;
         } else {
             relaxation_t = step_t * 1000;
+            step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
         }
 
         berendsen_thermostat(atoms, target_temp, step_t, relaxation_t);
@@ -103,7 +106,7 @@ int main() {
             write_xyz(traj_file, atoms);
 
             // update neighbors
-            neighbor_list.update(atoms, sigma * 3);
+            neighbor_list.update(atoms, cutoff);
         }
     }
 
