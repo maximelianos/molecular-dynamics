@@ -1,5 +1,5 @@
 //
-// Created by iter on 05.09.24.
+// Copyright 2024 Maksim Velikanov
 //
 
 #include "lj.h"
@@ -19,7 +19,6 @@ double lj_neighbor_list(Atoms &atoms, NeighborList &neighbor_list, double epsilo
             // compute potential energy
             energy += 4 * epsilon * (std::pow(sigma, 12) * std::pow(r.norm(), -12) -
                 std::pow(sigma, 6) * std::pow(r.norm(), -6));
-            //std::cout << i << " " << k << " " << r.norm() << "\n";
 
             // compute gradient of energy - the force
             double lj = 4 * epsilon * (std::pow(sigma, 12) * (-12) * std::pow(r.norm(), -13) -

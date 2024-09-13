@@ -1,5 +1,5 @@
 //
-// Created by iter on 05.09.24.
+// Copyright 2024 Maksim Velikanov
 //
 
 #include "lj_direct_summation.h"
@@ -15,8 +15,7 @@ double kinetic_energy(Atoms &atoms, double mass) {
 }
 
 double get_temperature(Atoms &atoms, double mass) {
-    // E_k = 3/2 * N k_b T
-    // T = 2/3 * E_k / N / k_b
+    // E_k = 3/2 * N k_b T -> T = 2/3 * E_k / N / k_b
     double e_kin = kinetic_energy(atoms, mass);
     //double k_b = 1.38e+4 / 1.66 / 197; // 1.38e-23 / (1 atom mass unit)
     double k_b = 8.3e-5;
@@ -36,8 +35,8 @@ double lj_direct_summation(Atoms &atoms, double epsilon, double sigma) {
             Point_t r = pos_k - pos_i;
             // compute potential energy
             energy += 4 * epsilon * (std::pow(sigma, 12) * std::pow(r.norm(), -12) -
-                std::pow(sigma, 6) * std::pow(r.norm(), -6)); 
-            //std::cout << i << " " << k << " " << r.norm() << "\n";
+                std::pow(sigma, 6) * std::pow(r.norm(), -6));
+            // norm is length of vector
 
             // compute gradient of energy - the force
             double lj = 4 * epsilon * (std::pow(sigma, 12) * (-12) * std::pow(r.norm(), -13) -

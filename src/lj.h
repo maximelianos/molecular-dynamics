@@ -1,5 +1,5 @@
 //
-// Created by iter on 05.09.24.
+// Copyright 2024 Maksim Velikanov
 //
 
 #ifndef LJ_H

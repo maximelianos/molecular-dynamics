@@ -1,5 +1,5 @@
 //
-// Created by iter on 12.09.24.
+// Copyright 2024 Maksim Velikanov
 //
 
 #ifndef LATTICE_H
