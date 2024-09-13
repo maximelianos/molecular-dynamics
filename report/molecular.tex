@@ -140,10 +140,13 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 
 \begin{figure*}[htb]
 	\centering
-	\includegraphics[width=.7\linewidth]{img/fig.pdf}
+	\includegraphics[width=.7\linewidth]{img/fig_total_energy.pdf}
 	\caption{Total energy behaviour is better with very small time step.}
 	\label{fig:first_simulation}
 \end{figure*}
+
+
+\section*{Berendsen thermostat}
 
 \begin{figure*}[htb]
 	\centering
@@ -160,32 +163,35 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 		\resizebox{\columnwidth}{!}{
 			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.png}}
 	\end{minipage}
-	\caption{OVITO visualization. Without thermostat, atoms vaporize even with the smallest time step.}
+	\caption{OVITO visualization with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.}
 	\label{fig:first_simulation_ovito}
 \end{figure*}
 
+As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases, therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. (REF Lec 4)
 
+   H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, A. DiNola, and J. R. Haak. Molecular dynamics with coupling to an external bath. J. Chem. Phys., 81(8):3684–3690, 1984. URL https://doi.org/10.1063/1.448118.
 
-
-\section*{Berendsen thermostat}
-As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases, therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. (REF)
-
-To decrease the temperature, we scale the velocities of atoms by a factor
+To decrease the temperature, we scale the velocities of atoms by a factor:
 
 \[ v' = \lambda v,\ \lambda = \sqrt{1 + \left(\cfrac{T_0}{T}-1 \right) \cfrac{\Delta t}{\tau} }  \]
 \[ E_k = \cfrac{1}{2} \sum_i m_i v_i^2 = \cfrac{3}{2} N K_b T \infers T = \cfrac{2}{3} \cfrac{E_k}{K_b N} \]
 
 \(T_0\) is target temperature, \(\Delta t = 0.0001 \sqrt{m\sigma^2 / \epsilon} \) from the first simulation, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
 
-I create a cube of atoms of width 4 for this experiment
+I create a cube of atoms of width 4 for this experiment. Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
 
-Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
+Choosing Berendsen relaxation time: for the whole simulation, \(1000\Delta t\) is required to keep the atoms from evaporating; initial stronger relaxation doesn't make a difference.
 
-Choosing Berendsen relaxation time: for whole simulation, \(1000\delta t\) is required to keep the atoms from evaporating; initial strong relaxation doesn't make a difference.
+Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the wished value, and in case the relaxation time is same as step time, it should change instantly.
 
-Time: n=2, t=0.5; n=3, t=6; n=4, t=30.
+\begin{figure*}[htb]
+	\centering
+	\includegraphics[width=.3\linewidth]{img/fig_quad_time.pdf}
+	\caption{Time scales quadratically with number of atoms.}
+	\label{fig:berendsen_time}
+\end{figure*}
 
-{\bf Implementation} --- src/lj\_direct\_summation.cpp, src/lj\_direct\_summation.h, tests/test\_lj\_direct\_summation.cpp src/xyz.cpp, src/xyz.h, tests/test\_verlet.cpp, milestones/05/main.cpp
+{\bf Implementation} --- src/lattice.cpp, src/lattice.h, src/thermostat.cpp, src/thermostat.h, tests/test\_thermostat.cpp milestones/05/main.cpp
 
 \section*{Milestone 6. Neighbor list}
 
