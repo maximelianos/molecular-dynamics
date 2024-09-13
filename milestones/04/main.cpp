@@ -36,6 +36,7 @@ void write_energy(std::ofstream &file, double time, double energy) {
 }
 
 int main() {
+    // load atoms from file
     auto [names, positions, velocities]{read_xyz_with_velocities("lj54.xyz")};
     Atoms atoms(positions);
     atoms.velocities = velocities;
@@ -44,15 +45,16 @@ int main() {
     double epsilon = 1;
     double m = 1;
 
-    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
+    // time step
+    double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.00001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
-    std::ofstream energy_file("total_energy_001.txt");
-    std::ofstream epot_file("potential_energy_001.txt");
-    std::ofstream ekin_file("kinetic_energy_001.txt");
+    std::ofstream energy_file("total_energy.txt");
+    std::ofstream epot_file("potential_energy.txt");
+    std::ofstream ekin_file("kinetic_energy.txt");
 
     std::cout << "time step " << step_t << "\n";
 
@@ -69,6 +71,7 @@ int main() {
             double t = get_temperature(atoms);
             std::cout << "e_pot " << std::setw(8) << e_pot
                       << " e_kin " << std::setw(8) << e_kin
+                      << " e_tot " << std::setw(8) << e
                       << " t " << std::setw(4) << t << "\n";
 
             // log total energy
@@ -86,6 +89,8 @@ int main() {
     }
 
     energy_file.close();
+    epot_file.close();
+    ekin_file.close();
 
     return 0;
 }

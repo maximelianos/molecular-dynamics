@@ -351,3 +351,11 @@ cython_debug/
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 data/
+
+# latex
+*.aux
+*.bbl
+*.blg
+*.log
+*.synctex.gz
+

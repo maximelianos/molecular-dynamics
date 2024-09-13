@@ -41,8 +41,10 @@ int main() {
     double epsilon = 1;
     double m = 1;
 
+    // create a cube of width n
     Atoms atoms = cubic_lattice(n, sigma);
 
+    // simulation time
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
     double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
@@ -53,6 +55,7 @@ int main() {
     std::ofstream epot_file("potential_energy_001.txt");
     std::ofstream ekin_file("kinetic_energy_001.txt");
 
+    // time for equilibration
     double equi_t = step_t * 1000;
 
     std::cout << "time step " << step_t << "\n";
@@ -68,7 +71,7 @@ int main() {
         double target_temp = 0.005;
         double relaxation_t;
         if (begin_t < equi_t) {
-            relaxation_t = step_t * 1000;
+            relaxation_t = step_t * 100;
         } else {
             relaxation_t = step_t * 1000;
         }
