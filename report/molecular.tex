@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[12pt,a4paper]{article}
 
 \usepackage{alltt}
 \usepackage[utf8]{inputenc}
@@ -16,14 +16,15 @@
 \usepackage{listings}
 \usepackage{color}
 \usepackage{tikz} % для создания иллюстраций
+\usepackage{hyperref}
 
 \newcommand{\infers}{\,\to\,}
 \newcommand{\tinfers}{\;\Rightarrow\;}
 
-\voffset = -118pt
-\textheight = 820pt
-\hoffset = -100pt
-\textwidth = 550pt
+%\voffset = -118pt
+%\textheight = 820pt
+%\hoffset = -100pt
+%\textwidth = 550pt
 \newcommand{\htext}{0.46\textwidth}
 \newcommand{\hstext}{0.45\textwidth}
 
@@ -36,26 +37,59 @@
 
 \begin{document}
 
-\maketitle
 
-Note! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
+% TEAM.
+\parbox{0.333\textwidth}{
+	Maksim Velikanov \\[0mm]
+}
+% In der Mitte der Name der Veranstaltung.
+\parbox{0.333\textwidth}{\vspace*{1mm}\begin{center}\large\bf%
+		HPC with C++\\[0mm]
+		SS 24\\[0mm]
+\end{center}}
+\parbox{0.333\textwidth}{
+	\begin{flushright}
+		Project report\\[0mm]
+		13.09.2024\\[0mm]
+	\end{flushright}
+}
+\par\vspace{-5mm}
+\definecolor{freiburg-gray}{rgb}{0.68,0.68,0.68}
+\vspace*{2mm}
+\raisebox{1.19cm}{%
+	\textcolor{freiburg-gray}{\rule{\textwidth}{1.1mm}}}
 
-\section*{Velocity-Verlet integrator}
+\bigskip
 
-Lennard-Jones potential - Pauli repulsion and London dispersion (attraction) (REF)
 
-Velocity-Verlet integration (REF)
 
+
+\section{Introduction}
+
+I completed the milestones until no. 6. The implemented program is capable of generating a cubic lattice or using a precomputed one; running the simulation under control without the cluster vaporizing; monitoring the energies; saving the cluster for visualization.
+
+The theoretical base is present in \hyperref[methods]{methods}, the overview of implementation and results in \hyperref[implementation]{implementation}, and \ref[conclusion]{conclusion} at the end.
+
+\section{Methods}
+\label{methods}
+
+The key components of Molecular Dynamics are following:
+
+\begin{enumerate}
+	\item Update atom position and velocity, given constant force for a small time step --- {\bf Velocity-Verlet integrator}
+	\item Estimate force between particles from the potential energy --- {\bf Lennard-Jones potential and Embedded Atom method potential}
+	\item Prevent explosion of the system by connecting it to a constant-temperature heat bath --- {\bf Berendsen Thermostat}
+\end{enumerate}
+
+\newpage
+\subsection*{Velocity-Verlet integrator}
+
+The movement is approximated by assuming constant force and making small time steps. We take Newton's law and definition of velocity, using Taylor formula, we get the approximation equations. Was rediscovered by Loup Verlet \cite{verlet} for Molecular Dynamics simulation.
 
 \[ \dot{\mat{v}}_i(t) = \cfrac{\mat{f}_i(t)}{m_i} \]
 \[ \dot{\mat{r}}_i(t) = \mat{v}_i(t) \]
 
-The movement is approximated by assuming constant force and making small time steps. We take Newton's law and definition of velocity, using Taylor formula, we get the approximation equations. (REF Lec 2)
-
-Allen, Michael P., and Dominic J. Tildesley, Computer Simulation of Liquids, 2nd edn (Oxford, 2017; online edn, Oxford Academic, 23 Nov. 2017)
-
-
-Predictor step:
+Integration, predictor step:
 \[
 v_i(t + \Delta t/2) = v_i(t) + \cfrac{1}{2m_i} f_i(t) \Delta t
 \]
@@ -66,19 +100,14 @@ Corrector step:
 
 {\bf Implementation} --- src/atoms.h, src/verlet.cpp, src/verlet.h, tests/test\_verlet.cpp
 
-\section*{Lec 2}
+\subsection*{Lennard Jones potential}
 
-
-\section*{Milestone 4. Lennard Jones potential with direct summation}
-
-How to compute forces from energy. By definition of pair potential:
+Here we derive a formula to compute the force from potential energy. By definition of pair potential:
 \[
 E_{pot} = \sum_{i<j} V(r_{ij})
 \]
 
-Lennard-Jones potential is sum of Pauli Repulsion (repulsive force) and London Dispersion (attractive force). These interactions act even on uncharged atoms.
-
-(REF Lec 3 Müser, M. H., Sukhomlinov, S. V., and Pastewka, L. (2022). Interatomic potentials: achievements and challenges. Advances in Physics: X, 8(1). https://doi.org/10.1080/23746149.2022.2093129)
+Lennard-Jones potential \cite{lennard-jones} is sum of Pauli Repulsion (repulsive force) and London Dispersion (attractive force). These interactions act even on uncharged atoms.
 
 \[
 V_{ij}(r) = 4\epsilon \left( \Bigl(\cfrac{\sigma}{r}\Bigr)^{12} - \Bigl(\cfrac{\sigma}{r}\Bigr)^{6} \right)
@@ -131,7 +160,32 @@ Last piece in the puzzle is derivative of potential by distance.
 \cfrac{\partial V}{\partial r} = 4\epsilon (\sigma^{12} (-12) r^{-13} - \sigma^6\cdot 6\cdot r^{-7})
 \]
 
-\section*{First molecular dynamics simulation}
+\subsection*{Berendsen thermostat}
+
+As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases, therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. The Berendsen thermostat \cite{berendsen} decreases the temperature by scaling the velocities of atoms by a factor:
+
+\[ v' = \lambda v \]
+
+\[ \lambda = \sqrt{1 + \left(\cfrac{T_0}{T}-1 \right) \cfrac{\Delta t}{\tau} }  \]
+\[ E_k = \cfrac{1}{2} \sum_i m_i v_i^2 = \cfrac{3}{2} N K_b T \infers T = \cfrac{2}{3} \cfrac{E_k}{K_b N} \]
+
+\(T_0\) is target temperature, \(\Delta t = 0.0001 \sqrt{m\sigma^2 / \epsilon} \) from the first simulation, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
+
+\section{Implementation and results}
+\label{implementation}
+
+Note! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
+
+Code is structured in folders:
+\begin{itemize}
+	\item milestones --- CPP sources for simulation executables
+	\item plot --- Python notebooks for plotting. Requires precomputed simultion results
+	\item report --- the sources for the report you are reading now
+	\item src --- common CPP files
+	\item tests --- CPP tests using Google test framework
+\end{itemize}
+
+\subsection*{First simulation}
 In the first simulation, we don't care about physical units, and just set \( m=1, \sigma=1, \epsilon=1 \). Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), the atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).  
 
 Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)): 0.001 --- OVITO visualization shows that most of atoms evaporate and fly into infinity; 0.00001 --- most atoms stay together, while some still evaporate. We can also detect evaporation if potential energy increases and kinetic energy doesn't change. The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}.
@@ -146,7 +200,7 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 \end{figure*}
 
 
-\section*{Berendsen thermostat}
+\subsection*{Adding Berendsen thermostat}
 
 \begin{figure*}[htb]
 	\centering
@@ -163,47 +217,50 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 		\resizebox{\columnwidth}{!}{
 			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.png}}
 	\end{minipage}
-	\caption{OVITO visualization with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.}
+	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.}
 	\label{fig:first_simulation_ovito}
 \end{figure*}
 
-As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases, therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. (REF Lec 4)
 
-   H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, A. DiNola, and J. R. Haak. Molecular dynamics with coupling to an external bath. J. Chem. Phys., 81(8):3684–3690, 1984. URL https://doi.org/10.1063/1.448118.
+I create a cube of atoms of width 4 for this experiment, Fig.~\ref{fig:first_simulation_ovito}
 
-To decrease the temperature, we scale the velocities of atoms by a factor:
-
-\[ v' = \lambda v,\ \lambda = \sqrt{1 + \left(\cfrac{T_0}{T}-1 \right) \cfrac{\Delta t}{\tau} }  \]
-\[ E_k = \cfrac{1}{2} \sum_i m_i v_i^2 = \cfrac{3}{2} N K_b T \infers T = \cfrac{2}{3} \cfrac{E_k}{K_b N} \]
-
-\(T_0\) is target temperature, \(\Delta t = 0.0001 \sqrt{m\sigma^2 / \epsilon} \) from the first simulation, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
-
-I create a cube of atoms of width 4 for this experiment. Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
+Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
 
 Choosing Berendsen relaxation time: for the whole simulation, \(1000\Delta t\) is required to keep the atoms from evaporating; initial stronger relaxation doesn't make a difference.
 
-Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the wished value, and in case the relaxation time is same as step time, it should change instantly.
+Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the wished value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
+
+{\bf Implementation} --- src/lattice.cpp, src/lattice.h, src/thermostat.cpp, src/thermostat.h, tests/test\_thermostat.cpp milestones/05/main.cpp
+
+\subsection*{Neighbor list}
 
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.3\linewidth]{img/fig_pairwise.pdf}
 	\caption{Time scales quadratically with number of atoms.}
-	\label{fig:berendsen_time}
+	\label{fig:berendsen_time_pair}
 \end{figure*}
-
-{\bf Implementation} --- src/lattice.cpp, src/lattice.h, src/thermostat.cpp, src/thermostat.h, tests/test\_thermostat.cpp milestones/05/main.cpp
-
-\section*{Milestone 6. Neighbor list}
 
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.3\linewidth]{img/fig_neighbor.pdf}
 	\caption{Time scales linearly with number of atoms.}
-	\label{fig:berendsen_time}
+	\label{fig:berendsen_time_neighbor}
 \end{figure*}
 
-Cutoff radius is \( 3 \sigma \) to allow speedup.
+The provided implementation is used. Cutoff radius is \( 4 \sigma \) to allow speedup, but not miss important interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:berendsen_time_pair} and Fig.~\ref{fig:berendsen_time_neighbor}
 
 {\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/05/main.cpp
+
+\section{Conclusion}
+\label{conclusion}
+
+I should have planned to complete the project much earlier. The MPI part is well known, but it takes a lot of time to adapt the simulation code and debug.
+
+\newpage
+{\small
+	\bibliographystyle{plain}
+	\bibliography{egbib}
+}
 
 \end{document}
