@@ -68,7 +68,7 @@
 
 I completed the milestones until no. 6. The implemented program is capable of generating a cubic lattice or using a precomputed one; running the simulation under control without the cluster vaporizing; monitoring the energies; saving the cluster for visualization.
 
-The theoretical base is present in \hyperref[methods]{methods}, the overview of implementation and results in \hyperref[implementation]{implementation}, and \ref[conclusion]{conclusion} at the end.
+The theoretical base is present in \hyperref[methods]{methods}, the overview of implementation and results in \hyperref[implementation]{implementation}, and \hyperref[conclusion]{conclusion} at the end.
 
 \section{Methods}
 \label{methods}
@@ -190,7 +190,7 @@ In the first simulation, we don't care about physical units, and just set \( m=1
 
 Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)): 0.001 --- OVITO visualization shows that most of atoms evaporate and fly into infinity; 0.00001 --- most atoms stay together, while some still evaporate. We can also detect evaporation if potential energy increases and kinetic energy doesn't change. The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}.
 
-{\bf Implementation} --- src/lj\_direct\_summation.cpp, src/lj\_direct\_summation.h, tests/test\_lj\_direct\_summation.cpp src/xyz.cpp, src/xyz.h, tests/test\_verlet.cpp, milestones/04/main.cpp
+{\bf Implementation} --- src/lj\_direct\_summation.cpp, src/lj\_direct\_summation.h, tests/test\_lj\_direct\_summation.cpp, src/xyz.cpp, src/xyz.h, tests/test\_verlet.cpp, milestones/04/main.cpp
 
 \begin{figure*}[htb]
 	\centering
@@ -200,22 +200,22 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 \end{figure*}
 
 
-\subsection*{Adding Berendsen thermostat}
+\subsection*{Berendsen thermostat}
 
 \begin{figure*}[htb]
 	\centering
 	\begin{minipage}{.3\textwidth}
 		\centering
-		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1.8cm},clip]{img/sim1.png}}
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1.8cm},clip]{img/sim1.jpg}}
 	\end{minipage}\hfill
 	\begin{minipage}{.3\textwidth}
 		\centering
-		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim2.png}}
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim2.jpg}}
 	\end{minipage}\hfill
 	\begin{minipage}{.3\textwidth}
 		\centering
 		\resizebox{\columnwidth}{!}{
-			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.png}}
+			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.jpg}}
 	\end{minipage}
 	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.}
 	\label{fig:first_simulation_ovito}
