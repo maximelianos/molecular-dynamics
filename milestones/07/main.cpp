@@ -43,7 +43,7 @@ void run_heat_capacity() {
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("cluster_3871.xyz")}; // 923, 3871
+    auto [names, positions]{read_xyz("cluster_923.xyz")}; // 923, 3871
     Atoms atoms(positions);
 
     // Small variant
@@ -54,12 +54,21 @@ void run_heat_capacity() {
 
     // time in femtosec
     double begin_t = 0;
-    double end_t = 300000; // 20000
+    double end_t = 100000; // 20000
     double step_t = 10;
 
     double last_print_t = 0;
-    double print_freq_t = 1000000; // 100
+    double print_freq_t = 1000; // 100
     int print_i = 0;
+    // log positions of atoms
+    auto get_traj_filename = [&print_i] -> std::string {
+        std::string num = std::to_string(print_i);
+        const int num_zeros = 4;
+        std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
+        print_i += 1;
+        return traj_file;
+    };
+
     std::ofstream energy_file("total_energy.txt");
     std::ofstream epot_file("potential_energy.txt");
     std::ofstream ekin_file("kinetic_energy.txt");
@@ -78,7 +87,7 @@ void run_heat_capacity() {
     double temp_sum = 0;
     double e_tot_sum = 0;
 
-    double cutoff = 6.0;
+    double cutoff = 10.0;
     NeighborList neighbor_list;
     neighbor_list.update(atoms, cutoff);
 
@@ -118,13 +127,9 @@ void run_heat_capacity() {
             write_energy(interval_energy_file, begin_t, e_avg);
             write_energy(interval_temp_file, begin_t, t_avg);
 
-            double delta_q = 40.0; // 20.0
+            double delta_q = 20.0;
             double lambda = std::sqrt(1 + delta_q / e_kin); // add constant heat
             atoms.velocities = atoms.velocities * lambda;
-
-            // change instantly
-            //double target_temp = 300 + (begin_t / end_t) * end_temperature;
-            //berendsen_thermostat(atoms, target_temp, step_t, step_t, m);
 
             last_heat_t = begin_t;
             temp_sum = 0;
@@ -144,14 +149,7 @@ void run_heat_capacity() {
             write_energy(epot_file, begin_t, e_pot);
             write_energy(ekin_file, begin_t, e_kin);
             write_energy(temp_file, begin_t, t);
-
-            // log positions of atoms
-
-            std::string num = std::to_string(print_i);
-            int num_zeros = 4;
-            std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
-            print_i += 1;
-            write_xyz(traj_file, atoms);
+            write_xyz(get_traj_filename(), atoms);
 
             // update neighbors
             neighbor_list.update(atoms, cutoff);
