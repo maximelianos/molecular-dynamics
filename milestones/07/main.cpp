@@ -123,15 +123,25 @@ void run_regular() {
 
 
 void run_heat_capacity() {
-    double m = 197 * 103.6;
+    double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
     auto [names, positions]{read_xyz("cluster_923.xyz")};
     Atoms atoms(positions);
 
+    // Small variant
+    // end t = 30 000
+    // step_t = 0.5
+    // relax_t = 5000
+    // delta q = 20
+
+    // Big variant
+    // step_t = 0.1
+    // relax_t = 20000 * 1000
+
     // time in femtosec
     double begin_t = 0;
-    double end_t = 20000;
+    double end_t = 30000; // 20000
     double step_t = 0.5;
 
     double last_print_t = 0;
@@ -147,7 +157,7 @@ void run_heat_capacity() {
 
     // heat deposit interval
     double last_heat_t = 0;
-    double heat_deposit_t = 1000;
+    double heat_deposit_t = 1000; // 1000
     double temp_sum = 0;
     double e_tot_sum = 0;
 
@@ -172,7 +182,7 @@ void run_heat_capacity() {
         if (begin_t < equi_t) {
             relaxation_t = step_t * 100;
         } else {
-            relaxation_t = step_t * 5000;
+            relaxation_t = 5000;
         }
         berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
 
@@ -186,9 +196,9 @@ void run_heat_capacity() {
                       << " t_avg " << std::setw(12) << temp_sum / steps
                     << "\n";
 
-            double delta_q = 20.0;
+            double delta_q = 20.0; // 20.0
             double lambda = std::sqrt(1 + delta_q / e_kin);
-            //atoms.velocities = atoms.velocities * lambda;
+            atoms.velocities = atoms.velocities * lambda;
 
             last_heat_t = begin_t;
             temp_sum = 0;
@@ -197,10 +207,10 @@ void run_heat_capacity() {
 
 
         if (begin_t - last_print_t > print_freq_t) {
-            // std::cout << "e_pot " << std::setw(12) << e_pot
-            //           << " e_kin " << std::setw(12) << e_kin
-            //           << " e_tot " << std::setw(12) << e
-            //           << " temp " << std::setw(4) << t << "\n";
+            std::cout << "e_pot " << std::setw(12) << e_pot
+                      << " e_kin " << std::setw(12) << e_kin
+                      << " e_tot " << std::setw(12) << e
+                      << " temp " << std::setw(4) << t << "\n";
 
             // log total energy
             write_energy(energy_file, begin_t, e);

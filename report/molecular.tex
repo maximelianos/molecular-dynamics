@@ -162,7 +162,7 @@ Last piece in the puzzle is derivative of potential by distance.
 
 \subsection*{Berendsen thermostat}
 
-As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases, therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. The Berendsen thermostat \cite{berendsen} decreases the temperature by scaling the velocities of atoms by a factor:
+As the molecular dynamics system evolves, potential energy decreases and kinetic energy increases. Kinetic energy is temperature multiplied by a constant: $E_k = \frac{3}{2} NK_b T$, so the temperature can get too high and system will explode. Therefore we connect the system to a heat bath of constant temperature, which stabilizes the simulation. The Berendsen thermostat \cite{berendsen} decreases the temperature by scaling the velocities of atoms by a factor:
 
 \[ v' = \lambda v \]
 
@@ -195,7 +195,7 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.7\linewidth]{img/fig_total_energy.pdf}
-	\caption{Total energy behaviour is better with very small time step.}
+	\caption{Less atoms evaporate with very small time step.}
 	\label{fig:first_simulation}
 \end{figure*}
 
@@ -226,9 +226,9 @@ I create a cube of atoms of width 4 for this experiment, Fig.~\ref{fig:first_sim
 
 Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
 
-Choosing Berendsen relaxation time: for the whole simulation, \(1000\Delta t\) is required to keep the atoms from evaporating; initial stronger relaxation doesn't make a difference.
+Choosing Berendsen relaxation time: for the whole simulation, \(1000\Delta t\) is required to keep the atoms from evaporating; initial stronger relaxation didn't make a difference.
 
-Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the wished value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
+Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the desired value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
 
 {\bf Implementation} --- src/lattice.cpp, src/lattice.h, src/thermostat.cpp, src/thermostat.h, tests/test\_thermostat.cpp milestones/05/main.cpp
 
@@ -237,20 +237,92 @@ Testing the Berendsen implementation is very simple, because it modifies the spe
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.3\linewidth]{img/fig_pairwise.pdf}
-	\caption{Time scales quadratically with number of atoms.}
+	\caption{Without cutoff, time scales quadratically with number of atoms.}
 	\label{fig:berendsen_time_pair}
 \end{figure*}
 
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.3\linewidth]{img/fig_neighbor.pdf}
-	\caption{Time scales linearly with number of atoms.}
+	\caption{With cutoff, time scales linearly with number of atoms.}
 	\label{fig:berendsen_time_neighbor}
 \end{figure*}
 
-The provided implementation is used. Cutoff radius is \( 4 \sigma \) to allow speedup, but not miss important interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:berendsen_time_pair} and Fig.~\ref{fig:berendsen_time_neighbor}
+The provided implementation of neighbor lists is used. Cutoff radius is \( 4 \sigma \) to allow speedup, but not miss important interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:berendsen_time_pair} and Fig.~\ref{fig:berendsen_time_neighbor}. Number of atoms: $2^3=8, 3^3=27, 4^3=64, 5^3=125$.
 
-{\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/05/main.cpp
+{\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/06/main.cpp
+
+Run: \verb|cd buildDir/milestones/06; time ./milestone06|
+
+\verb|lj_direct_summation|
+\verb|lj_neighbor_list|
+\verb|optimization level 3|
+
+\begin{itemize}
+	\item Outputs are generated in \verb|buildDir/milestones/05|
+	\item Plot with \verb|plot/time_lineplot.ipynb|
+\end{itemize}
+
+\subsection*{Time and mass units}
+
+Units of measurement. We fix the length to angstrem (approximately distance between atoms) and energy to electron-volts (energy of a covalent bond) at first:
+
+\begin{itemize}
+	\item length: Å, angstrem = 0,1nm. 1m = $10^{10}$ Å
+	\item energy: eV, electron-volts = qU Joules = 1 (elementary electrical charge) $* 1,602 * 10^{-19}$ Volts. 1 Joule = $\frac{1}{1U}$
+	\item velocity: $[l]/[t]$
+	\item acceleration: $[l]/[t]^2$
+	\item $f=ma$:       $[m][l]/[t]^2$
+	\item $[E]=[A]=[f*S]$:    $[m][l]^2/[t]^2$
+	\item $f$: $[E]/[l]$
+\end{itemize}
+
+Boltzmann constant in new unit system: \[ K_b = 1,38 * 10^{-23} \frac{J}{K} = \frac{1,38}{1,602} * 10^{-23} * 10^{+19} \text{eV/K} = 0,8614 * 10^{-4} = \underline{8,614 * 10^{-5} \text{eV/K}} \]
+
+We fix \underline{[t] = 1 fs}. From this derive the unit of mass: 
+
+\begin{gather*}
+	[E] = [m][l]^2/[t]^2\\
+	[m] = [E][t]^2/[l]^2\\
+	[m] = 1 \text{eV} * (1 \text{fs})^2 / (1 \text{Å}^2) =\\
+	1,602 * 10^{-19} J * 10^{-30} s * 10^{+20} m = 1,6 * 10^{-29} \text{kg}
+\end{gather*}
+
+We can convert this to g/mol:
+\begin{center}
+	1mol $= 6.02 * 10^{23}$\\
+	1 g/mol = $\cfrac{10^{-3}}{6 * 10^{23}} $\\
+	1 kg = $6 * 10^{26}$ g/mol\\
+	$[m] = 1,6 * 10^{-29} * 6 * 10^{+26} \text{g/mol} = 9,6 * 10^{-3} =$ \underline{0,009649 g/mol}\\
+	1 g/mol = $103,63\ [m]$
+\end{center}
+
+Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
+
+\subsection*{Heating experiment}
+
+Calibrated step = 0.1 (unit?)
+Berendsen relax = 50 000 step t
+
+To add a fixed amount of energy $Q$ we scale the velocities by $\lambda$:
+
+\[
+\begin{aligned}
+	E_k &= \frac{1}{2} \sum_i m v_i^2 \\
+	E_k + Q &= \frac{1}{2} \sum_i m (\lambda v_i)^2 = \lambda^2 \frac{1}{2} \sum_i m v_i^2 \\
+	E_k + Q &= \lambda^2 E_k \\
+	\lambda^2 &= 1 + \frac{Q}{E_k} \\
+\end{aligned}
+\]
+
+Latent heat is the additional energy to transform from solid to liquid state. During melting the temperature (and kinetic energy) stay the same, but potential energy increases.
+
+{\centering\framed{ \( \lambda = \sqrt{1 + \frac{Q}{E_k}} \) }\\}
+
+Plot 1. Total energy vs temperature
+Plot 2. Melting point vs cluster size
+Plot 3. Latent heat vs cluster size
+Plot 4. Heat capacity (at which point??) vs cluster size
 
 \section{Conclusion}
 \label{conclusion}
