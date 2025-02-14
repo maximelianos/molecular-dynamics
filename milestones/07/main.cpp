@@ -133,7 +133,6 @@ void run_heat_capacity() {
     // end t = 30 000
     // step_t = 0.5
     // relax_t = 5000
-    // delta q = 20
 
     // Big variant
     // step_t = 0.1
@@ -153,7 +152,7 @@ void run_heat_capacity() {
     std::ofstream temp_file("temperature.txt");
 
     // equilibration phase
-    double equi_t = step_t * 100;
+    double equi_t = 100;
 
     // heat deposit interval
     double last_heat_t = 0;
@@ -161,8 +160,9 @@ void run_heat_capacity() {
     double temp_sum = 0;
     double e_tot_sum = 0;
 
+    double cutoff = 9.0;
     NeighborList neighbor_list;
-    neighbor_list.update(atoms, 10.0);
+    neighbor_list.update(atoms, cutoff);
 
     std::cout << "time step " << step_t << "\n";
 
@@ -180,7 +180,7 @@ void run_heat_capacity() {
         double target_temp = 300;
         double relaxation_t;
         if (begin_t < equi_t) {
-            relaxation_t = step_t * 100;
+            relaxation_t = 100;
         } else {
             relaxation_t = 5000;
         }
@@ -227,7 +227,7 @@ void run_heat_capacity() {
             write_xyz(traj_file, atoms);
 
             // update neighbors
-            neighbor_list.update(atoms, 10.0);
+            neighbor_list.update(atoms, cutoff);
         }
     }
 
