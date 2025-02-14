@@ -301,8 +301,7 @@ Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
 
 \subsection*{Heating experiment}
 
-Calibrated step = 0.1 (unit?)
-Berendsen relax = 50 000 step t
+Calibrated step $\Delta t$ = 0.5 fs. Berendsen thermostat $\tau_T$ = 5000 fs. Equilibration is done for the first 100 fs with $\tau_T$ = 100 fs. From total 
 
 To add a fixed amount of energy $Q$ we scale the velocities by $\lambda$:
 
@@ -322,7 +321,15 @@ Latent heat is the energy to transform from solid to liquid state. During meltin
 Plot 1. Total energy vs temperature
 Plot 2. Melting point vs cluster size
 Plot 3. Latent heat vs cluster size
-Plot 4. Heat capacity (at which point??) vs cluster size
+Plot 4. Heat capacity (line skew) vs cluster size
+
+Repeat for cluster sizes ?
+Determine time step ?
+Heat capacity = dE/dT = line skew
+
+Deposit $\Delta Q$ heat by scaling the velocities. $\tau_relax = 1000$ fs. Compute average temperature over $\tau_relax$.
+
+
 
 \section{Conclusion}
 \label{conclusion}

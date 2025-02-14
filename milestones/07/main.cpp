@@ -38,153 +38,70 @@ void write_energy(std::ofstream &file, double time, double energy) {
     file << std::setw(8) << time << " " << energy << "\n";
 }
 
-void run_regular() {
-    double sigma = 3;
-    //double epsilon = 0.01;
-    double m = 197 * 103.6;
-
-    auto [names, positions]{read_xyz("cluster_923.xyz")};
-    Atoms atoms(positions);
-
-    double begin_t = 0;
-    // double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
-    // double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
-    double end_t = 20000;
-    double step_t = 0.5;
-
-    double last_print_t = 0;
-    //double print_freq_t = 0.1 * std::sqrt(m * sigma * sigma / epsilon) / 10.18;
-    double print_freq_t = 200;
-    int print_i = 0;
-    std::ofstream energy_file("total_energy_001.txt");
-    std::ofstream epot_file("potential_energy_001.txt");
-    std::ofstream ekin_file("kinetic_energy_001.txt");
-
-    double equi_t = step_t * 100;
-
-    NeighborList neighbor_list;
-    neighbor_list.update(atoms, 10.0);
-
-    std::cout << "time step " << step_t << "\n";
-
-    for (; begin_t < end_t; begin_t += step_t) {
-        // compute forces
-        //double e_pot = lj_neighbor_list(atoms, neighbor_list, epsilon, sigma);
-        //double e_pot = ducastelle(atoms, neighbor_list, sigma * 6);
-        double e_pot = ducastelle(atoms, neighbor_list);
-        double e_kin = kinetic_energy(atoms, m);
-
-        // apply forces
-        verlet_step1(atoms, step_t, m);
-        verlet_step2(atoms, step_t, m);
-        double target_temp = 500;
-        double relaxation_t;
-        if (begin_t < equi_t) {
-            relaxation_t = step_t * 100;
-        } else {
-            relaxation_t = step_t * 10000;
-        }
-
-        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
-
-        // compute total energy
-        double e = e_pot + e_kin;
-        if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(atoms, m);
-            std::cout << "e_pot " << std::setw(12) << e_pot
-                      << " e_kin " << std::setw(12) << e_kin
-                      << " e_tot " << std::setw(12) << e
-                      << " temp " << std::setw(4) << t << "\n";
-
-            // log total energy
-            write_energy(energy_file, begin_t, e);
-            write_energy(epot_file, begin_t, e_pot);
-            write_energy(ekin_file, begin_t, e_kin);
-
-            // log positions of atoms
-            last_print_t = begin_t;
-            std::string num = std::to_string(print_i);
-            int num_zeros = 4;
-            std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
-            print_i += 1;
-            write_xyz(traj_file, atoms);
-
-            // update neighbors
-            neighbor_list.update(atoms, 10.0);
-        }
-    }
-
-    energy_file.close();
-    epot_file.close();
-    ekin_file.close();
-}
-
-
-
 
 void run_heat_capacity() {
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("cluster_923.xyz")};
+    auto [names, positions]{read_xyz("cluster_3871.xyz")}; // 923, 3871
     Atoms atoms(positions);
 
     // Small variant
-    // end t = 30 000
+    // end t = 25 000
     // step_t = 0.5
     // relax_t = 5000
-
-    // Big variant
-    // step_t = 0.1
-    // relax_t = 20000 * 1000
+    // delta q = 20
 
     // time in femtosec
     double begin_t = 0;
-    double end_t = 30000; // 20000
-    double step_t = 0.5;
+    double end_t = 300000; // 20000
+    double step_t = 10;
 
     double last_print_t = 0;
-    double print_freq_t = 100;
+    double print_freq_t = 1000000; // 100
     int print_i = 0;
     std::ofstream energy_file("total_energy.txt");
     std::ofstream epot_file("potential_energy.txt");
     std::ofstream ekin_file("kinetic_energy.txt");
     std::ofstream temp_file("temperature.txt");
 
+    std::ofstream interval_energy_file("interval_e_total.txt");
+    std::ofstream interval_temp_file("interval_temperature.txt");
+
     // equilibration phase
-    double equi_t = 100;
+    double equi_t = 500;
 
     // heat deposit interval
+    double end_temperature = 1800;
     double last_heat_t = 0;
-    double heat_deposit_t = 1000; // 1000
+    double heat_deposit_t = 4000; // 1000
     double temp_sum = 0;
     double e_tot_sum = 0;
 
-    double cutoff = 9.0;
+    double cutoff = 6.0;
     NeighborList neighbor_list;
     neighbor_list.update(atoms, cutoff);
 
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
-        // compute forces
+        verlet_step1(atoms, step_t, m);
+        // compute forces between Verlet steps!
         double e_pot = ducastelle(atoms, neighbor_list);
+        verlet_step2(atoms, step_t, m);
+
         double e_kin = kinetic_energy(atoms, m);
         double e = e_pot + e_kin;
-        double t = get_temperature(atoms, m);
-
-        // apply forces
-        verlet_step1(atoms, step_t, m);
-        verlet_step2(atoms, step_t, m);
+        double t = get_temperature(atoms);
 
         double target_temp = 300;
         double relaxation_t;
         if (begin_t < equi_t) {
-            relaxation_t = 100;
+            relaxation_t = 1000;
+            berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
         } else {
-            relaxation_t = 5000;
+            relaxation_t = 20000;
         }
-        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
 
         // deposit heat
         temp_sum += t;
@@ -196,9 +113,18 @@ void run_heat_capacity() {
                       << " t_avg " << std::setw(12) << temp_sum / steps
                     << "\n";
 
-            double delta_q = 20.0; // 20.0
-            double lambda = std::sqrt(1 + delta_q / e_kin);
+            double t_avg = temp_sum / steps;
+            double e_avg = e_tot_sum / steps;
+            write_energy(interval_energy_file, begin_t, e_avg);
+            write_energy(interval_temp_file, begin_t, t_avg);
+
+            double delta_q = 40.0; // 20.0
+            double lambda = std::sqrt(1 + delta_q / e_kin); // add constant heat
             atoms.velocities = atoms.velocities * lambda;
+
+            // change instantly
+            //double target_temp = 300 + (begin_t / end_t) * end_temperature;
+            //berendsen_thermostat(atoms, target_temp, step_t, step_t, m);
 
             last_heat_t = begin_t;
             temp_sum = 0;
@@ -211,6 +137,7 @@ void run_heat_capacity() {
                       << " e_kin " << std::setw(12) << e_kin
                       << " e_tot " << std::setw(12) << e
                       << " temp " << std::setw(4) << t << "\n";
+            last_print_t = begin_t;
 
             // log total energy
             write_energy(energy_file, begin_t, e);
@@ -219,7 +146,7 @@ void run_heat_capacity() {
             write_energy(temp_file, begin_t, t);
 
             // log positions of atoms
-            last_print_t = begin_t;
+
             std::string num = std::to_string(print_i);
             int num_zeros = 4;
             std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
@@ -234,6 +161,8 @@ void run_heat_capacity() {
     energy_file.close();
     epot_file.close();
     ekin_file.close();
+    interval_energy_file.close();
+    interval_temp_file.close();
 }
 
 int main() {

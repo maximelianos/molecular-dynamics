@@ -17,6 +17,7 @@ struct Atoms {
     Positions_t positions;
     Velocities_t velocities;
     Forces_t forces;
+    double current_e_kin = 0;
 
     Atoms(int nb_atoms) :
           positions(3, nb_atoms),
