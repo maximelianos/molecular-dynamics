@@ -68,7 +68,7 @@ int main() {
         // compute total energy
         double e = e_pot + e_kin;
         if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(atoms);
+            double t = get_temperature(e_kin, atoms.nb_atoms());
             std::cout << "e_pot " << std::setw(8) << e_pot
                       << " e_kin " << std::setw(8) << e_kin
                       << " e_tot " << std::setw(8) << e

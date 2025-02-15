@@ -8,7 +8,7 @@
 #include "atoms.h"
 
 // adjust atoms.velocities to prevent explosion
-void berendsen_thermostat(Atoms &atoms, double temperature, double timestep,
+void berendsen_thermostat(Atoms &atoms, double temperature, double target_temperature, double timestep,
                           double relaxation_time, double mass=1.0);
 
 

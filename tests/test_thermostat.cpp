@@ -27,10 +27,10 @@ TEST(ThermostatTest, OneAtom) {
     double step_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
 
     // velocity rescale - when relaxation time = step time
-    kinetic_energy(atoms, m);
-    berendsen_thermostat(atoms, 0.5, step_t, step_t);
-    kinetic_energy(atoms, m);
-    EXPECT_FLOAT_EQ(get_temperature(atoms), 0.5);
+    double t = get_temperature(kinetic_energy(atoms, m), atoms.nb_atoms());
+    berendsen_thermostat(atoms, t, 0.5, step_t, step_t);
+    t = get_temperature(kinetic_energy(atoms, m), atoms.nb_atoms());
+    EXPECT_FLOAT_EQ(t, 0.5);
 
     int n_steps = 50;
     // achieve temperature 1000.0
@@ -38,9 +38,9 @@ TEST(ThermostatTest, OneAtom) {
         // apply forces
         verlet_step1(atoms, step_t, m);
         verlet_step2(atoms, step_t, m);
-        kinetic_energy(atoms, m);
-        berendsen_thermostat(atoms, 1000.0, step_t, step_t * 10);
+        t = get_temperature(kinetic_energy(atoms, m), atoms.nb_atoms());
+        berendsen_thermostat(atoms, t, 1000.0, step_t, step_t * 10);
     }
-    kinetic_energy(atoms, m);
-    EXPECT_NEAR(get_temperature(atoms) / 1000.0, 1.0, 1e-2);
+    t = get_temperature(kinetic_energy(atoms, m), atoms.nb_atoms());
+    EXPECT_NEAR(t / 1000.0, 1.0, 1e-2);
 }

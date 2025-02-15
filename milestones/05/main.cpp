@@ -64,6 +64,7 @@ int main() {
         // compute forces
         double e_pot = lj_direct_summation(atoms, epsilon, sigma);
         double e_kin = kinetic_energy(atoms);
+        double t = get_temperature(e_kin, atoms.nb_atoms());
 
         // apply forces
         verlet_step1(atoms, step_t, m);
@@ -76,12 +77,12 @@ int main() {
             relaxation_t = step_t * 1000;
         }
 
-        berendsen_thermostat(atoms, target_temp, step_t, relaxation_t);
+        berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t);
 
         // compute total energy
         double e = e_pot + e_kin;
         if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(atoms);
+            double t = get_temperature(e_kin, atoms.nb_atoms());
             std::cout << "e_pot " << std::setw(12) << e_pot
                       << " e_kin " << std::setw(12) << e_kin
                       << " t " << std::setw(4) << t << "\n";

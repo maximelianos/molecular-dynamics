@@ -116,5 +116,6 @@ double ducastelle(Atoms &atoms, const NeighborList &neighbor_list,
     }
 
     // Return total potential energy
-    return energies.sum();
+
+    return energies(Eigen::seq(0, atoms.nb_local-1)).sum();
 }
