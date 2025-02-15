@@ -62,10 +62,8 @@ public:
 
 
 void run_heat_capacity() {
-    Domain domain(MPI_COMM_WORLD, {80.0, 80.0, 80.0}, {1, 2, 2}, {0, 0, 0});
+    Domain domain(MPI_COMM_WORLD, {60.0, 60.0, 60.0}, {1, 2, 2}, {0, 0, 0});
     int rank = domain.rank();
-    std::cout << "rank " << domain.rank() << "\n";
-    //return;
 
     double m = 196.96 * 103.63; // g/mol -> [m]
 
@@ -74,7 +72,7 @@ void run_heat_capacity() {
     Atoms atoms(positions);
     for (size_t i = 0; i < atoms.nb_atoms(); i++) {
         Point_t pos_i = atoms.positions(Eigen::all, i);
-        atoms.positions(Eigen::all, i) = pos_i + Eigen::Vector3d(20.0, 20.0, 20.0);
+        atoms.positions(Eigen::all, i) = pos_i + Eigen::Vector3d(5.0, 5.0, 5.0);
     }
 
     int global_nb_atoms = atoms.nb_atoms();
@@ -117,7 +115,7 @@ void run_heat_capacity() {
     double temp_sum = 0;
     double e_tot_sum = 0;
 
-    double cutoff = 10.0;
+    double cutoff = 8.0;
 
     domain.enable(atoms);
     std::cout << "rank " << domain.rank() << " atoms " << atoms.nb_local << "\n";
@@ -133,19 +131,16 @@ void run_heat_capacity() {
         std::cout << "time step " << step_t << "\n";
     }
 
-    double last_exchange = 0;
-    double exhange_t = 5;
-
     for (; begin_t < end_t; begin_t += step_t) {
         // Integrator step, independant
         verlet_step1(atoms, step_t, m);
 
         // compute forces between Verlet steps! Depends on ghost atoms
-        if (true || begin_t > last_exchange + exhange_t) {
-            last_exchange = begin_t;
-            domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
-            neighbor_list.update(atoms, cutoff);
-        }
+
+        domain.exchange_atoms(atoms);
+        domain.update_ghosts(atoms, cutoff * 2);
+        neighbor_list.update(atoms, cutoff);
+
         atoms.nb_local = domain.nb_local();
         double e_pot_local = ducastelle(atoms, neighbor_list);
 
@@ -169,7 +164,8 @@ void run_heat_capacity() {
         // deposit heat
         temp_sum += t;
         e_tot_sum += e;
-        if (last_heat_t + heat_deposit_t < begin_t) {
+
+        if (begin_t > last_heat_t + heat_deposit_t) {
             double steps = heat_deposit_t / step_t;
             double t_avg = temp_sum / steps;
             double e_avg = e_tot_sum / steps;
@@ -193,7 +189,7 @@ void run_heat_capacity() {
         }
 
 
-        if (begin_t - last_print_t > print_freq_t) {
+        if (begin_t > last_print_t + print_freq_t) {
             last_print_t = begin_t;
 
             if (rank == 0) {
@@ -205,15 +201,12 @@ void run_heat_capacity() {
                           << " temp " << std::setw(4) << t << "\n";
             }
 
-
+            domain.exchange_atoms(atoms);
             domain.disable(atoms);
-
             if (rank == 0) {
                 //logger.log(begin_t, e, t);
                 write_xyz(get_traj_filename(), atoms);
             }
-
-
             domain.enable(atoms);
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);

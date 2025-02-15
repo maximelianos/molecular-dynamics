@@ -92,7 +92,7 @@ void run_heat_capacity() {
     double temp_sum = 0;
     double e_tot_sum = 0;
 
-    double cutoff = 10.0;
+    double cutoff = 9.0;
     NeighborList neighbor_list;
     neighbor_list.update(atoms, cutoff);
 
