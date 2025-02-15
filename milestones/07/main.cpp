@@ -43,22 +43,30 @@ void run_heat_capacity() {
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("cluster_923.xyz")}; // 923, 3871
+    auto [names, positions]{read_xyz("whisker.xyz")}; // 923, 3871
     Atoms atoms(positions);
 
-    // Small variant
-    // end t = 25 000
-    // step_t = 0.5
-    // relax_t = 5000
-    // delta q = 20
+    // Small cluster
+    // end t = 100 000
+    // step_t = 10
+    // deposit_t = 4000
+    // delta_q = 20
+
+    // Big cluster
+    // delta_q = 100
 
     // time in femtosec
     double begin_t = 0;
-    double end_t = 100000; // 20000
+    double end_t = 100000;
     double step_t = 10;
 
-    double last_print_t = 0;
+    // equilibration phase
+    double equi_t = 500;
+
+    double heat_deposit_t = 4000; // 1000
     double print_freq_t = 1000; // 100
+
+    double last_print_t = 0;
     int print_i = 0;
     // log positions of atoms
     auto get_traj_filename = [&print_i] -> std::string {
@@ -77,13 +85,7 @@ void run_heat_capacity() {
     std::ofstream interval_energy_file("interval_e_total.txt");
     std::ofstream interval_temp_file("interval_temperature.txt");
 
-    // equilibration phase
-    double equi_t = 500;
-
-    // heat deposit interval
-    double end_temperature = 1800;
     double last_heat_t = 0;
-    double heat_deposit_t = 4000; // 1000
     double temp_sum = 0;
     double e_tot_sum = 0;
 
@@ -108,8 +110,6 @@ void run_heat_capacity() {
         if (begin_t < equi_t) {
             relaxation_t = 1000;
             berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
-        } else {
-            relaxation_t = 20000;
         }
 
         // deposit heat
@@ -126,8 +126,9 @@ void run_heat_capacity() {
             double e_avg = e_tot_sum / steps;
             write_energy(interval_energy_file, begin_t, e_avg);
             write_energy(interval_temp_file, begin_t, t_avg);
+            write_xyz(get_traj_filename(), atoms);
 
-            double delta_q = 20.0;
+            double delta_q = 200.0;
             double lambda = std::sqrt(1 + delta_q / e_kin); // add constant heat
             atoms.velocities = atoms.velocities * lambda;
 
@@ -149,7 +150,7 @@ void run_heat_capacity() {
             write_energy(epot_file, begin_t, e_pot);
             write_energy(ekin_file, begin_t, e_kin);
             write_energy(temp_file, begin_t, t);
-            write_xyz(get_traj_filename(), atoms);
+            //write_xyz(get_traj_filename(), atoms);
 
             // update neighbors
             neighbor_list.update(atoms, cutoff);
