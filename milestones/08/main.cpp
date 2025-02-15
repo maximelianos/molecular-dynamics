@@ -24,6 +24,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include "mpi.h"
 
 #include "lj_direct_summation.h"
 #include "verlet.h"
@@ -33,6 +34,9 @@
 #include "neighbors.h"
 #include "lj.h"
 #include "ducastelle.h"
+
+#include "mpi_support.h"
+#include "domain.h"
 
 void write_energy(std::ofstream &file, double time, double energy) {
     file << std::setw(8) << time << " " << energy << "\n";
@@ -166,7 +170,11 @@ void run_heat_capacity() {
     interval_temp_file.close();
 }
 
-int main() {
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+
     run_heat_capacity();
+
+    MPI_Finalize();
     return 0;
 }

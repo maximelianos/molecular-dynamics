@@ -7,7 +7,8 @@ lib_sources = [  # All source files (excluding headers)
     'lattice.cpp',
     'neighbors.cpp',
     'lj.cpp',
-    'ducastelle.cpp'
+    'ducastelle.cpp',
+    'domain.cpp'
 ]
 
 lib = static_library(

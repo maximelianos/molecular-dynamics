@@ -305,9 +305,11 @@ Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
 
 \textcolor{red}{\large\bf At this point I found that total energy was not conserved because I recomputed forces after 2 Verlet step!}
 
-Equilibration with Berendsen thermostat is done for the first 100 fs with $\tau_T$ = 100 fs and target temperature 300 K = 27 C.
+{\bf Equilibration} with Berendsen thermostat is done for the first 100 fs with $\tau_T$ = 100 fs and target temperature 300 K = 27 C.
 
-With correct force recomputation, even a huge time step $\Delta t=10$ fs causes total energy drift no more than 1 eV in 100 000 fs (without thermostat and heat deposition), we can safely use it for this simulation. Before the error was fixed, it drifted no matter which $\Delta t$ I chose. Also now I disable the thermostat after equilibration for fair energy measurements.
+With correct force recomputation, even a large time step $\Delta t=10$ fs causes total energy drift no more than 1 eV in 100 000 fs (without thermostat and heat deposition), we can safely use it for this simulation. Before the error was fixed, it drifted no matter which $\Delta t$ I chose. Now I disable the thermostat after equilibration for fair energy measurements. Smaller $\Delta t = 1$ fs showed similar results. The intuition for choosing the time step is, that it must be much smaller than oscillation period of an atom. The gold atoms have large mass thus a large step is acceptable.
+
+One oscillation takes 1000 fs.
 
 \subsubsection*{Adding heat}
 
@@ -326,7 +328,7 @@ To add a fixed amount of energy $Q$ we scale the velocities by $\lambda$:
 
 Latent heat is the energy to transform from solid to liquid state. During melting the temperature stays the same, but potential energy increases. Heat capacity is the coefficient $dE/dT$ of linear relation between $E_{tot}$ and $T$ (without thermostat it actually becomes linear).
 
-I simulated the Makay-923 and Makay-3871 Makay (TODO ref) clusters and generated Whisker-6950 using the \verb|make_whisker.py| script.
+I simulated the Makay-923 and Makay-3871 Makay clusters, introduced in \cite{MakayOriginal} and implemented by Dr Lars Pastewka in \cite{MakayPastewka} and generated Whisker-6950 using the \verb|make_whisker.py| script.
 As the simulation doesn't have truly constant melting temperature, I took the middle point between linear regions on the energy-temperature plot (Fig.~\ref{fig:heat-makay1},~\ref{fig:heat-makay2},~\ref{fig:heat-whisker}). To measure the heat capacity coefficient I take two faraway points on the energy-temperature plot and compute $(E_2-E_1)/(T_2-T_1)$. To measure latent heat I extrapolate the lines for solid phase and liquid phase to the assumed melting point and take the difference in energies (Fig.~\ref{fig:heat-estimated}).
 
 \begin{figure*}[h!]

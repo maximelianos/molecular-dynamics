@@ -11,12 +11,15 @@ using Names_t = std::vector<std::string>;
 using Positions_t = Eigen::Array3Xd;
 using Velocities_t = Eigen::Array3Xd;
 using Forces_t = Eigen::Array3Xd;
+using Masses_t = Eigen::ArrayXd;
 using Point_t = Eigen::Vector3d;
 
 struct Atoms {
     Positions_t positions;
     Velocities_t velocities;
     Forces_t forces;
+    Masses_t masses;
+
     double current_e_kin = 0;
 
     Atoms(int nb_atoms) :
@@ -26,6 +29,7 @@ struct Atoms {
         positions.setZero();
         velocities.setZero();
         forces.setZero();
+        masses.setZero();
     }
 
     Atoms(Positions_t &pos) :
@@ -34,6 +38,7 @@ struct Atoms {
           forces(3, pos.cols()) {
         velocities.setZero();
         forces.setZero();
+        masses.setZero();
     }
 
     Atoms(Names_t &names, Positions_t &pos) :
@@ -42,11 +47,19 @@ struct Atoms {
           forces(3, pos.cols()) {
         velocities.setZero();
         forces.setZero();
+        masses.setZero();
     }
 
     size_t nb_atoms() const {
         return positions.cols();
     }
+
+    // Milestone 8
+    void resize(size_t n) {
+        positions.conservativeResize(3, n);
+        velocities.conservativeResize(3, n);
+        forces.conservativeResize(3, n);
+    };
 };
 
 #endif //ATOMS_H
