@@ -65,7 +65,7 @@ void run_heat_capacity() {
     double end_strain = 158.0;
     double begin_strain = 144.25;
 
-    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, 1}, {0, 0, 1});
+    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, 4}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
@@ -128,7 +128,7 @@ void run_heat_capacity() {
 
         // computed stress in ducastelle
         double volume = domain.domain_length(0) * domain.domain_length(1) * domain.domain_length(2);
-        atoms.stress = atoms.stress / volume;
+        double stress_local = atoms.stress(2, 2) / volume;
 
         // Integrator step
         verlet_step2(atoms, step_t, m);
@@ -137,6 +137,7 @@ void run_heat_capacity() {
         double e_kin_local = kinetic_energy(atoms, m); // exclude ghost from e_kin
         double e_pot = MPI::allreduce(e_pot_local, MPI_SUM, domain.communicator());
         double e_kin = MPI::allreduce(e_kin_local, MPI_SUM, domain.communicator());
+        double stress = MPI::allreduce(stress_local, MPI_SUM, domain.communicator());
 
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, global_nb_atoms);
@@ -162,7 +163,7 @@ void run_heat_capacity() {
                           << " e_kin " << std::setw(12) << e_kin
                           << " e_tot " << std::setw(12) << e
                           << " temp " << std::setw(8) << t
-                          << " stress " << std::setw(12) << atoms.stress(2, 2)
+                          << " stress " << std::setw(12) << stress
                 << "\n";
             }
 
