@@ -1,7 +1,8 @@
 This work was performed on the computational resource bwUniCluster funded by the Ministry of Science, Research and the Arts Baden-Württemberg and the Universities of the State of Baden-Württemberg, Germany, within the framework program bwHPC
 
 
-ssh fr_mv276@bwunicluster.scc.kit.edu
+ssh fr_mv276@bwunicluster.scc.kit.edu # from email
+ssh fr_mv276@uc2.scc.kit.edu # from Pastewka
 ---
 1. Google Authenticator
 2. KakPravilno8!

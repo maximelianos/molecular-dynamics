@@ -20,6 +20,7 @@ struct Atoms {
     Forces_t forces;
     Masses_t masses;
     int nb_local; // domain decomposition
+    Eigen::Matrix3d stress;
 
     Atoms(int nb_atoms) :
           positions(3, nb_atoms),

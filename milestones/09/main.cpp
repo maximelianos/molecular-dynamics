@@ -62,28 +62,27 @@ public:
 
 
 void run_heat_capacity() {
-    Domain domain(MPI_COMM_WORLD, {60.0, 60.0, 60.0}, {1, 1, 1}, {0, 0, 0});
+    double end_strain = 158.0;
+    double begin_strain = 144.25;
+
+    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, 1}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("cluster_3871.xyz")}; // 923, 3871
+    auto [names, positions]{read_xyz("whisker_small.xyz")}; // 923, 3871
     Atoms atoms(positions);
-    for (size_t i = 0; i < atoms.nb_atoms(); i++) {
-        Point_t pos_i = atoms.positions(Eigen::all, i);
-        atoms.positions(Eigen::all, i) = pos_i + Eigen::Vector3d(5.0, 5.0, 5.0);
-    }
     int global_nb_atoms = atoms.nb_atoms();
 
     // time in femtosec
     double begin_t = 0;
-    double end_t = 10000;
+    double end_t = 50000;
     double step_t = 10;
 
     // equilibration phase
     double equi_t = 500;
-    double print_freq_t = 100; // 1000
+    double print_freq_t = 1000; // 1000
 
     double last_print_t = 0;
     int print_i = 0;
@@ -113,8 +112,10 @@ void run_heat_capacity() {
         std::cout << "time step " << step_t << "\n";
     }
 
+
+
     for (; begin_t < end_t; begin_t += step_t) {
-        // Integrator step, independant
+        // Integrator step
         verlet_step1(atoms, step_t, m);
 
         // compute forces between Verlet steps! Depends on ghost atoms
@@ -125,7 +126,11 @@ void run_heat_capacity() {
         atoms.nb_local = domain.nb_local(); // exclude ghost from e_pot
         double e_pot_local = ducastelle(atoms, neighbor_list);
 
-        // Integrator step, independant
+        // computed stress in ducastelle
+        double volume = domain.domain_length(0) * domain.domain_length(1) * domain.domain_length(2);
+        atoms.stress = atoms.stress / volume;
+
+        // Integrator step
         verlet_step2(atoms, step_t, m);
 
         // Sum energies over all domain
@@ -148,13 +153,17 @@ void run_heat_capacity() {
         if (begin_t > last_print_t + print_freq_t) {
             last_print_t = begin_t;
 
+
+
             if (rank == 0) {
                 std::cout << "local_atoms " << std::setw(4) << domain.nb_local()
                           << " with_ghost " << std::setw(4) << atoms.nb_atoms()
                           << " e_pot " << std::setw(12) << e_pot
                           << " e_kin " << std::setw(12) << e_kin
                           << " e_tot " << std::setw(12) << e
-                          << " temp " << std::setw(4) << t << "\n";
+                          << " temp " << std::setw(8) << t
+                          << " stress " << std::setw(12) << atoms.stress(2, 2)
+                << "\n";
             }
 
             domain.disable(atoms);
@@ -162,7 +171,11 @@ void run_heat_capacity() {
                 logger.log(begin_t, e, t);
                 write_xyz(get_traj_filename(), atoms);
             }
+
+
             domain.enable(atoms);
+            double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
+            domain.scale(atoms, {40, 40, new_strain});
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);
         }

@@ -69,6 +69,10 @@ double ducastelle(Atoms &atoms, const NeighborList &neighbor_list,
     // per-atom energies
     Eigen::ArrayXd energies{embedding};
 
+    // stress = sum_{i=0..N} sum_{j=i..N+N_g} r_ij @ f_ij.T / Volume
+    Eigen::Matrix3d stress;
+    stress.setZero();
+
     // compute forces
     for (auto [i, j] : neighbor_list) {
         if (i < j) {
@@ -111,11 +115,15 @@ double ducastelle(Atoms &atoms, const NeighborList &neighbor_list,
                 // sum per-atom forces
                 atoms.forces.col(i) -= pair_force;
                 atoms.forces.col(j) += pair_force;
+
+                // stress
+                if (i < atoms.nb_local)
+                    stress += distance_vector.matrix() * pair_force.matrix().transpose();
             }
         }
     }
 
     // Return total potential energy
-
+    atoms.stress = stress;
     return energies(Eigen::seq(0, atoms.nb_local-1)).sum();
 }
