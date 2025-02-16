@@ -68,7 +68,11 @@ void run_heat_capacity() {
     double end_strain = 158.0;
     double begin_strain = 144.25;
 
-    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, 4}, {0, 0, 1});
+    // How many processors do we have?
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
