@@ -45,18 +45,21 @@ void write_energy(std::ofstream &file, double time, double energy) {
 class TextLog {
     std::ofstream energy_file_;
     std::ofstream temp_file_;
+    std::ofstream stress_file_;
 
 public:
     TextLog() {}
 
-    TextLog(char *energy_filename, char *temp_filename) {
+    TextLog(char *energy_filename, char *temp_filename, char *stress_filename) {
         energy_file_.open(energy_filename);
         temp_file_.open(temp_filename);
+        stress_file_.open(stress_filename);
     }
 
-    void log(double time, double energy, double temp) {
+    void log(double time, double energy, double temp, double stress) {
         write_energy(energy_file_, time, energy);
         write_energy(temp_file_, time, temp);
+        write_energy(stress_file_, time, stress);
     }
 };
 
@@ -108,7 +111,7 @@ void run_heat_capacity() {
 
     TextLog logger;
     if (rank == 0) {
-        logger = TextLog("energy.txt", "temperature.txt");
+        logger = TextLog("energy.txt", "temperature.txt", "stress.txt");
         std::cout << "time step " << step_t << "\n";
     }
 
@@ -169,7 +172,7 @@ void run_heat_capacity() {
 
             domain.disable(atoms);
             if (rank == 0) {
-                logger.log(begin_t, e, t);
+                logger.log(begin_t, e, t, stress);
                 write_xyz(get_traj_filename(), atoms);
             }
 
