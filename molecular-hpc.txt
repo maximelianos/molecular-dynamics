@@ -37,4 +37,4 @@ cp lj54.xyz molecular-dynamics/milestones/04 && cp cluster_923.xyz molecular-dyn
 mkdir build && meson setup build --buildtype=release && cd build && meson compile
 cp whisker_small.xyz molecular-dynamics/build/milestones/09
 
-sbatch run.job
+sbatch run.job ./build/milestones/09/milestone09
