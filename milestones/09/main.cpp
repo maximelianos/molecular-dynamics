@@ -65,7 +65,7 @@ public:
 
 
 void run_heat_capacity() {
-    double end_strain = 158.0;
+    double end_strain = 150.0;
     double begin_strain = 144.25;
 
     // How many processors do we have?
@@ -88,7 +88,7 @@ void run_heat_capacity() {
     double step_t = 10;
 
     // equilibration phase
-    double equi_t = 500;
+    double equi_t = 1000;
     double print_freq_t = 1000; // 1000
 
     double last_print_t = 0;
@@ -104,6 +104,7 @@ void run_heat_capacity() {
 
     double temp_sum = 0;
     double e_tot_sum = 0;
+    double stress_sum = 0;
 
     double cutoff = 8.0;
 
@@ -149,20 +150,21 @@ void run_heat_capacity() {
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, global_nb_atoms);
 
+        double target_temp = 500;
+        double relaxation_t;
         if (begin_t < equi_t) {
-            double target_temp = 300;
-            double relaxation_t = 1000;
-            //berendsen_thermostat(atoms, target_temp, step_t, relaxation_t, m);
+            relaxation_t = 500;
+        } else {
+            relaxation_t = 2000;
         }
+        berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
 
         temp_sum += t;
         e_tot_sum += e;
+        stress_sum += stress;
 
         if (begin_t > last_print_t + print_freq_t) {
             last_print_t = begin_t;
-
-
-
             if (rank == 0) {
                 std::cout << "local_atoms " << std::setw(4) << domain.nb_local()
                           << " with_ghost " << std::setw(4) << atoms.nb_atoms()
@@ -170,9 +172,10 @@ void run_heat_capacity() {
                           << " e_kin " << std::setw(12) << e_kin
                           << " e_tot " << std::setw(12) << e
                           << " temp " << std::setw(8) << t
-                          << " stress " << std::setw(12) << stress
+                          << " stress " << std::setw(12) << stress_sum / (print_freq_t / step_t)
                 << "\n";
             }
+            stress_sum = 0;
 
             domain.disable(atoms);
             if (rank == 0) {

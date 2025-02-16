@@ -35,5 +35,6 @@ git clone https://github.com/maximelianos/molecular-dynamics.git
 cp lj54.xyz molecular-dynamics/milestones/04 && cp cluster_923.xyz molecular-dynamics/milestones/07 && cp cluster_3871.xyz molecular-dynamics/milestones/07
 
 mkdir build && meson setup build --buildtype=release && cd build && meson compile
+cp whisker_small.xyz molecular-dynamics/build/milestones/09
 
 sbatch run.job
