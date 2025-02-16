@@ -1,5 +1,6 @@
 #include "hello.h"
 #include <sys/param.h>
+#include <unistd.h>
 #include <Eigen/Dense>
 #include <iostream>
 

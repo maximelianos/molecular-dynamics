@@ -29,3 +29,12 @@ mpirun
 Run
 mpirun -n 1 ./milestone08
 mpirun -n 4 --oversubscribe ./milestone08
+
+
+git clone https://github.com/maximelianos/molecular-dynamics.git
+cp data/lj milestones/04
+cp data/cluster milestones/07
+cp data/cluster milestones/07
+
+mkdir build && meson setup build --buildtype=release && cd build && meson compile
+sbatch run.job
