@@ -560,8 +560,11 @@ For visualization of defects I found slice operation in OVITO and used Common Ne
 \begin{lstlisting}[breaklines]
 cd buildDir/milestones/09
 mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
+sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
 \end{lstlisting}
+
+Domain decomposition is done automatically based on available number of processes.
+For some reason the big whisker fails to run with an error in neighbors "neighbor list not yet computed".
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -572,7 +575,7 @@ milestones/09/main.cpp
 \section{Conclusion}
 \label{conclusion}
 
-I should have planned to complete the project much earlier. The MPI part is well known, but it takes a lot of time to adapt the simulation code and debug.
+In this report I implemented a program that is capable of running a Molecular Dynamics simulation in parallel on a cluster. The report covers efficient implementation of the simulation using neighbor lists for the interatomic potentials, parallelization for multiple CPUs. The characteristics of materials were measured: energy of system, melting point, latent heat, heat capacity, stress force.
 
 \newpage
 {\small
