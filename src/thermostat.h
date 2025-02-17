@@ -1,6 +1,10 @@
-//
-// Copyright 2024 Maksim Velikanov
-//
+/*
+* Copyright 2024 Maxim Velikanov
+* MIT license
+*
+* Adjust the temperature with Berendsen thermostat.
+*
+*/
 
 #ifndef THERMOSTAT_H
 #define THERMOSTAT_H

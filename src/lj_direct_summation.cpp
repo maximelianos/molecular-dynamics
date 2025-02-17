@@ -15,7 +15,8 @@ double kinetic_energy(Atoms &atoms, double mass) {
 }
 
 double get_temperature(double e_kin, double nb_atoms) {
-    // E_k = 3/2 * N_atoms k_b T -> T = 2/3 * E_k / N_atoms / k_b
+    // E_k = 3/2 * N_atoms k_b T =>
+    // T = 2/3 * E_k / N_atoms / k_b
 
     //double k_b = 1.38e+4 / 1.66 / 197; // 1.38e-23 / (1 atom mass)
     double k_b = 8.614e-5; // eV / Kelvin

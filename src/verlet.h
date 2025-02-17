@@ -1,6 +1,10 @@
-//
-// Created by Maksim Velikanov on 10/07/24.
-//
+/*
+* Copyright 2024 Maxim Velikanov
+* MIT license
+*
+* Verlet integrator recomputes the positions of atoms.
+*
+*/
 
 #ifndef MD_MASTER_VERLET_H
 #define MD_MASTER_VERLET_H

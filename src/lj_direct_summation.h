@@ -1,11 +1,13 @@
-//
-// Created by iter on 05.09.24.
-//
+/*
+* Copyright 2024 Maxim Velikanov
+* MIT license
+*
+* Compute the forces from Lennard-Jones potential without neighbour lists.
+*
+*/
 
 #ifndef LJ_DIRECT_SUMMATION_H
 #define LJ_DIRECT_SUMMATION_H
-
-#include <iostream>
 
 #include "verlet.h"
 #include "lj_direct_summation.h"

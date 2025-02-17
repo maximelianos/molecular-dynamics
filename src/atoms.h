@@ -1,6 +1,9 @@
-//
-// Created by iter on 10.09.24.
-//
+/*
+ * Copyright 2024 Maxim Velikanov
+ * MIT license
+ *
+ * The Atoms class holds the atomic system positions, velocities and forces.
+ */
 
 #ifndef ATOMS_H
 #define ATOMS_H
@@ -20,7 +23,7 @@ struct Atoms {
     Forces_t forces;
     Masses_t masses;
     int nb_local; // domain decomposition
-    Eigen::Matrix3d stress;
+    Eigen::Matrix3d stress; // whisker stretching
 
     Atoms(int nb_atoms) :
           positions(3, nb_atoms),
@@ -60,7 +63,8 @@ struct Atoms {
         return positions.cols();
     }
 
-    // Milestone 8
+    // Domain decomposition. Change the size of arrays for ghost atoms
+    // or to distribute the subdomains.
     void resize(size_t n) {
         positions.conservativeResize(3, n);
         velocities.conservativeResize(3, n);

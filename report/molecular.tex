@@ -50,7 +50,7 @@
 \parbox{0.333\textwidth}{
 	\begin{flushright}
 		Project report\\[0mm]
-		13.09.2024\\[0mm]
+		17.02.2025\\[0mm]
 	\end{flushright}
 }
 \par\vspace{-5mm}
@@ -66,7 +66,7 @@
 
 \section{Introduction}
 
-I completed the milestones until no. 6. The implemented program is capable of generating a cubic lattice or using a precomputed one; running the simulation under control without the cluster vaporizing; monitoring the energies; saving the cluster for visualization.
+The implemented program is capable of generating a cubic lattice or using a precomputed one; running the simulation under control without the cluster vaporizing; monitoring the energies; saving the cluster for visualization; heating the cluster and measuring the melting point and latent heat; running parallel simulation with OpenMPI; stretching a golden whisker and measuring stress.
 
 The theoretical base is present in \hyperref[methods]{methods}, the overview of implementation and results in \hyperref[implementation]{implementation}, and \hyperref[conclusion]{conclusion} at the end.
 
@@ -77,8 +77,11 @@ The key components of Molecular Dynamics are following:
 
 \begin{enumerate}
 	\item Update atom position and velocity, given constant force for a small time step --- {\bf Velocity-Verlet integrator}
-	\item Estimate force between particles from the potential energy --- {\bf Lennard-Jones potential and Embedded Atom method potential}
+	\item Estimate force between particles from the potential energy --- {\bf Lennard-Jones potential}
 	\item Prevent explosion of the system by connecting it to a constant-temperature heat bath --- {\bf Berendsen Thermostat}
+	\item More accurate N-body potential for modeling metals --- {\bf Embedded Atom Method potential}
+	\item {\bf Domain decomposition} and parallel execution with OpenMPI
+	\item Application of an external force --- {\bf Stress estimation}
 \end{enumerate}
 
 \newpage
@@ -170,6 +173,100 @@ As the molecular dynamics system evolves, potential energy decreases and kinetic
 \[ E_k = \cfrac{1}{2} \sum_i m_i v_i^2 = \cfrac{3}{2} N K_b T \infers T = \cfrac{2}{3} \cfrac{E_k}{K_b N} \]
 
 \(T_0\) is target temperature, \(\Delta t = 0.0001 \sqrt{m\sigma^2 / \epsilon} \) from the first simulation, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
+
+\subsection*{Embedded Atom Method potential}
+
+TODO cite Cleri Rosato
+
+The EAM models attraction with the local electron density, and repulsion with a pairwise term. This potential has parameters that must be estimated for each type of atom experimentally, in this report we use gold (Au).
+
+Force is the derivative of energy by position:
+\[
+\mat{f}_k = -\cfrac{\partial E_{pot}}{\partial \mat{r}_k}
+\]
+
+\[
+\mat{f}_k = \sum_i ( \partial F(\rho_k) / \partial \rho_k + \partial F(\rho_i) / \partial \rho_i )  \cfrac{\partial f}{\partial r_{ik}} \hat{r}_{ik} +
+\sum_i \cfrac{\partial V}{\partial r_{ik}} \hat{r}_{ik},
+\]
+
+where $\mat{f}_k$ is force on atom $k$, $r_k$ is position of atom $k$, $F(\rho)$ is an embedding functional dependent on electron density, $V$ is pairwise repulsion.
+
+\subsection*{EAM potential, time and mass units}
+
+We fix the length to angstrem (approximately distance between atoms) and energy to electron-volts (energy of a covalent bond) at first:
+
+\begin{itemize}
+	\item length: Å, angstrem = 0,1nm. 1m = $10^{10}$ Å
+	\item energy: eV, electron-volts = qU Joules = 1 (elementary electrical charge) $* 1,602 * 10^{-19}$ Volts. 1 Joule = $\frac{1}{1U}$
+	\item velocity: $[l]/[t]$
+	\item acceleration: $[l]/[t]^2$
+	\item $f=ma$:       $[m][l]/[t]^2$
+	\item $[E]=[A]=[f*S]$:    $[m][l]^2/[t]^2$
+	\item $f$: $[E]/[l]$
+\end{itemize}
+
+Boltzmann constant in new unit system: \[ K_b = 1,38 * 10^{-23} \frac{J}{K} = \frac{1,38}{1,602} * 10^{-23} * 10^{+19} \text{eV/K} = 0,8614 * 10^{-4} = \underline{8,614 * 10^{-5} \text{eV/K}} \]
+
+We fix \underline{[t] = 1 fs}. From this derive the unit of mass: 
+
+\begin{gather*}
+	[E] = [m][l]^2/[t]^2\\
+	[m] = [E][t]^2/[l]^2\\
+	[m] = 1 \text{eV} * (1 \text{fs})^2 / (1 \text{Å}^2) =\\
+	1,602 * 10^{-19} J * 10^{-30} s * 10^{+20} m = 1,6 * 10^{-29} \text{kg}
+\end{gather*}
+
+We can convert this to g/mol:
+\begin{center}
+	1mol $= 6.02 * 10^{23}$\\
+	1 g/mol = $\cfrac{10^{-3}}{6 * 10^{23}} $\\
+	1 kg = $6 * 10^{26}$ g/mol\\
+	$[m] = 1,6 * 10^{-29} * 6 * 10^{+26} \text{g/mol} = 9,6 * 10^{-3} =$ \underline{0,009649 g/mol}\\
+	1 g/mol = $103,63\ [m]$
+\end{center}
+
+Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
+
+\subsection*{Domain decomposition}
+
+We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn the same amount of parallel processes as there are subdomains. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than $2 * cutoff$ for EAM potential.
+
+The processes have to communicate the atom movement between subdomains and ghost atoms with the neighboring subdomains. Each subdomain has $9+8+9=26$ neighbors in 3D. To avoid pair-wise communication between them, we execute send-receive (Fig.~\ref{fig:domain-communication}):
+
+\begin{enumerate}
+	\item in $x+$ direction
+	\item in $x-$ direction
+	\item in $y+$ direction
+	\item in $y-$ direction
+	\item in $z+$ direction
+	\item in $z-$ direction
+\end{enumerate}
+
+\begin{figure*}[h!]
+	\centering
+	\includegraphics[width=.5\linewidth]{img/milestone08-domain-communication.jpg}
+	\caption{Each process gets neighbor information without direct communication.}
+	\label{fig:domain-communication}
+\end{figure*}
+
+This way it takes 6 steps instead of 26 for each process to get all information from its neighbors.
+
+\subsection*{Stress estimation}
+
+For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix.
+
+\[
+\sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}^T_{ij} \times \mat{f}_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}^T_{ij} \times \mat{f}_{ij},
+\]
+
+where $\sigma\ (3, 3)$ - stress matrix for $xx, xy, \ldots zz$ directions, $V$ - total volume, $\mat{r}^T_{ij}\ (1, 3)$ - position, $\mat{f}_{ij}\ (3, 1)$ - force.
+
+As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from this matrix (in experiments all other entries are near 0). The stress is per-atom, can be computed separately in each subdomain and then summed.
+
+
+
+\clearpage
 
 \section{Implementation and results}
 \label{implementation}
@@ -263,44 +360,6 @@ Run: \verb|cd buildDir/milestones/06; time ./milestone06|
 	\item Plot with \verb|plot/time_lineplot.ipynb|
 \end{itemize}
 
-\subsection*{EAM potential, time and mass units}
-
-TODO describe EAM
-
-We fix the length to angstrem (approximately distance between atoms) and energy to electron-volts (energy of a covalent bond) at first:
-
-\begin{itemize}
-	\item length: Å, angstrem = 0,1nm. 1m = $10^{10}$ Å
-	\item energy: eV, electron-volts = qU Joules = 1 (elementary electrical charge) $* 1,602 * 10^{-19}$ Volts. 1 Joule = $\frac{1}{1U}$
-	\item velocity: $[l]/[t]$
-	\item acceleration: $[l]/[t]^2$
-	\item $f=ma$:       $[m][l]/[t]^2$
-	\item $[E]=[A]=[f*S]$:    $[m][l]^2/[t]^2$
-	\item $f$: $[E]/[l]$
-\end{itemize}
-
-Boltzmann constant in new unit system: \[ K_b = 1,38 * 10^{-23} \frac{J}{K} = \frac{1,38}{1,602} * 10^{-23} * 10^{+19} \text{eV/K} = 0,8614 * 10^{-4} = \underline{8,614 * 10^{-5} \text{eV/K}} \]
-
-We fix \underline{[t] = 1 fs}. From this derive the unit of mass: 
-
-\begin{gather*}
-	[E] = [m][l]^2/[t]^2\\
-	[m] = [E][t]^2/[l]^2\\
-	[m] = 1 \text{eV} * (1 \text{fs})^2 / (1 \text{Å}^2) =\\
-	1,602 * 10^{-19} J * 10^{-30} s * 10^{+20} m = 1,6 * 10^{-29} \text{kg}
-\end{gather*}
-
-We can convert this to g/mol:
-\begin{center}
-	1mol $= 6.02 * 10^{23}$\\
-	1 g/mol = $\cfrac{10^{-3}}{6 * 10^{23}} $\\
-	1 kg = $6 * 10^{26}$ g/mol\\
-	$[m] = 1,6 * 10^{-29} * 6 * 10^{+26} \text{g/mol} = 9,6 * 10^{-3} =$ \underline{0,009649 g/mol}\\
-	1 g/mol = $103,63\ [m]$
-\end{center}
-
-Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
-
 \subsection*{Heating experiment}
 
 \textcolor{red}{\large\bf At this point I found that total energy was not conserved because I recomputed forces after 2 Verlet step!}
@@ -373,8 +432,6 @@ As the simulation doesn't have truly constant melting temperature, I took the mi
 \newpage
 
 \subsection*{Parallelization}
-
-TODO domain decomposition
 
 Atoms on the domain edge disappear. Solution: add offset to positions.
 

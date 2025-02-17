@@ -1,6 +1,10 @@
-//
-// Copyright 2024 Maksim Velikanov
-//
+/*
+* Copyright 2024 Maxim Velikanov
+* MIT license
+*
+* Compute the forces using Lennard-Jones potential.
+*
+*/
 
 #ifndef LJ_H
 #define LJ_H

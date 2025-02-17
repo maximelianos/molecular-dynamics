@@ -1,6 +1,10 @@
-//
-// Copyright 2024 Maksim Velikanov
-//
+/*
+* Copyright 2024 Maxim Velikanov
+* MIT license
+*
+* Generate simple cubic grid.
+*
+*/
 
 #ifndef LATTICE_H
 #define LATTICE_H
