@@ -46,7 +46,5 @@ sbatch run.job ./buildDir/milestones/09/milestone09 300.0 20 whisker_small.xyz 2
 
 Update from git:
 
-git pull
-rm *out
-mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile && cd ..
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 1 whisker_small.xyz 1
+git pull; mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile && cd ..
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 1 whisker_small.xyz 1

@@ -65,10 +65,11 @@ public:
 
 
 int main(int argc, char **argv) {
-    // usage: ./milestone09 temp total_strain file.xyz experiment_name
+    // usage: ./milestone09 temp strain_diff file.xyz experiment_name
     // for example: mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
     MPI_Init(&argc, &argv);
 
+    std::cout << "RECEIVED " << argc << "ARGUMENTS\n";
     double target_temp = 300.0;
     double strain = 5.0;
     std::string atoms_file = "whisker_small.xyz";
