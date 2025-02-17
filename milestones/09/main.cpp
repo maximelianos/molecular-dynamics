@@ -39,10 +39,13 @@
 #include "domain.h"
 
 void write_energy(std::ofstream &file, double time, double energy) {
+    // save energy value to a text file
     file << std::setw(8) << time << " " << energy << "\n";
 }
 
 class TextLog {
+    // multiple files to save the energy
+
     std::ofstream energy_file_;
     std::ofstream temp_file_;
     std::ofstream stress_file_;
@@ -50,12 +53,14 @@ class TextLog {
 public:
     TextLog() {}
 
+    // open the text files
     TextLog(std::string energy_filename, std::string temp_filename, std::string stress_filename) {
         energy_file_.open(energy_filename);
         temp_file_.open(temp_filename);
         stress_file_.open(stress_filename);
     }
 
+    // write the values into text files
     void log(double time, double energy, double temp, double stress) {
         write_energy(energy_file_, time, energy);
         write_energy(temp_file_, time, temp);
@@ -69,8 +74,8 @@ int main(int argc, char **argv) {
     // for example: mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
     MPI_Init(&argc, &argv);
 
-    double target_temp = 300.0;
-    double strain = 5.0;
+    double target_temp = 300.0; // thermostat target temperature
+    double strain = 5.0; // difference between beginning and end length
     std::string atoms_file = "whisker_small.xyz";
     std::string exp_name = "exp";
     if (argc >= 4) {
@@ -84,10 +89,13 @@ int main(int argc, char **argv) {
     auto [names, positions]{read_xyz(atoms_file)}; // 923, 3871
     Atoms atoms(positions);
     int global_nb_atoms = atoms.nb_atoms();
+
+    // automatically deduce the domain
     double max_x = positions(0, Eigen::all).maxCoeff();
     double max_y = positions(1, Eigen::all).maxCoeff();
     double max_z = positions(2, Eigen::all).maxCoeff();
 
+    // strain range
     double begin_strain = max_z + 1.0;
     double end_strain = begin_strain + strain;
 
@@ -95,12 +103,12 @@ int main(int argc, char **argv) {
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    // initialize domain
     Domain domain(MPI_COMM_WORLD, {max_x + 40.0, max_y + 40.0, begin_strain}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
+    // mass of a gold atom
     double m = 196.96 * 103.63; // g/mol -> [m]
-
-
 
     // time in femtosec
     double begin_t = 0;
@@ -108,11 +116,13 @@ int main(int argc, char **argv) {
     double step_t = 10;
 
     // equilibration phase
-    double equi_t = 1000;
+    double equi_t = 2000;
     double print_freq_t = 5000; // 1000
 
+    // printing status
     double last_print_t = 0;
     int print_i = 0;
+
     // log positions of atoms
     auto get_traj_filename = [&print_i] -> std::string {
         std::string num = std::to_string(print_i);
@@ -122,6 +132,7 @@ int main(int argc, char **argv) {
         return traj_file;
     };
 
+    // count averages
     Average counter_temp;
     Average counter_e;
     Average counter_stress;
@@ -131,20 +142,24 @@ int main(int argc, char **argv) {
     domain.enable(atoms);
     std::cout << "rank " << domain.rank() << " atoms " << atoms.nb_local << "\n";
     domain.update_ghosts(atoms, cutoff * 2);
+
+    // update neighbours for each atom
     NeighborList neighbor_list;
     neighbor_list.update(atoms, cutoff);
 
+    // initialize text logger
     TextLog logger;
     if (rank == 0) {
         logger = TextLog("energy.txt", "temperature.txt", "stress-" + exp_name + ".txt");
         std::cout << "time step " << step_t << "\n";
     }
 
+    // loop over time
     for (; begin_t < end_t; begin_t += step_t) {
         // Integrator step
         verlet_step1(atoms, step_t, m);
 
-        // compute forces between Verlet steps! Depends on ghost atoms
+        // compute forces between Verlet steps! Depends on ghost atoms, so we update them
         domain.exchange_atoms(atoms);
         domain.update_ghosts(atoms, cutoff * 2);
         neighbor_list.update(atoms, cutoff);
@@ -165,22 +180,23 @@ int main(int argc, char **argv) {
         double e_kin = MPI::allreduce(e_kin_local, MPI_SUM, domain.communicator());
         double stress = MPI::allreduce(stress_local, MPI_SUM, domain.communicator());
 
+        // total energy
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, global_nb_atoms);
 
-        double relaxation_t;
+        // equilibration phase
         if (begin_t < equi_t) {
-            relaxation_t = 500;
-        } else {
-            relaxation_t = 2000;
+            double relaxation_t = 500;
+            berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
         }
-        berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
 
+        // compute averages
         counter_temp.add(t);
         counter_e.add(e);
         counter_stress.add(stress);
 
         if (begin_t > last_print_t + print_freq_t) {
+            // print statistics
             last_print_t = begin_t;
             double avg_stress = counter_stress.result();
             if (rank == 0) {
@@ -197,8 +213,9 @@ int main(int argc, char **argv) {
                 logger.log(begin_t, e, t, avg_stress);
                 write_xyz(get_traj_filename(), atoms);
             }
-
             domain.enable(atoms);
+
+            // rescale domain, update ghost atoms
             double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
             domain.scale(atoms, {40, 40, new_strain});
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
