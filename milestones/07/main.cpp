@@ -71,6 +71,7 @@ void run_heat_capacity() {
 
     double last_print_t = 0;
     int print_i = 0;
+
     // log positions of atoms
     auto get_traj_filename = [&print_i] -> std::string {
         std::string num = std::to_string(print_i);
@@ -80,17 +81,11 @@ void run_heat_capacity() {
         return traj_file;
     };
 
-    std::ofstream energy_file("total_energy.txt");
-    std::ofstream epot_file("potential_energy.txt");
-    std::ofstream ekin_file("kinetic_energy.txt");
-    std::ofstream temp_file("temperature.txt");
-
+    Average counter_e;
+    Average counter_t;
     std::ofstream interval_energy_file("interval_e_total.txt");
     std::ofstream interval_temp_file("interval_temperature.txt");
-
     double last_heat_t = 0;
-    double temp_sum = 0;
-    double e_tot_sum = 0;
 
     double cutoff = 9.0;
     NeighborList neighbor_list;
@@ -108,6 +103,7 @@ void run_heat_capacity() {
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, atoms.nb_atoms());
 
+        // Don't need Berendsen in this experiment!
         if (begin_t < equi_t) {
             double target_temp = 300;
             double relaxation_t = 1000;
@@ -115,19 +111,19 @@ void run_heat_capacity() {
         }
 
         // deposit heat
-        temp_sum += t;
-        e_tot_sum += e;
+        counter_e.add(e);
+        counter_t.add(t);
         if (last_heat_t + heat_deposit_t < begin_t) {
             double steps = heat_deposit_t / step_t;
+            double avg_e = counter_e.result();
+            double avg_t = counter_t.result();
             std::cout << "DEPOSIT"
-                      << " e_avg " << std::setw(12) << e_tot_sum / steps
-                      << " t_avg " << std::setw(12) << temp_sum / steps
+                      << " e_avg " << std::setw(12) << avg_e
+                      << " t_avg " << std::setw(12) << avg_t
                     << "\n";
 
-            double t_avg = temp_sum / steps;
-            double e_avg = e_tot_sum / steps;
-            write_energy(interval_energy_file, begin_t, e_avg);
-            write_energy(interval_temp_file, begin_t, t_avg);
+            write_energy(interval_energy_file, begin_t, avg_e);
+            write_energy(interval_temp_file, begin_t, avg_t);
             //write_xyz(get_traj_filename(), atoms);
 
             double delta_q = 20.0;
@@ -135,10 +131,7 @@ void run_heat_capacity() {
             //atoms.velocities = atoms.velocities * lambda;
 
             last_heat_t = begin_t;
-            temp_sum = 0;
-            e_tot_sum = 0;
         }
-
 
         if (begin_t - last_print_t > print_freq_t) {
             std::cout << "e_pot " << std::setw(12) << e_pot
@@ -146,12 +139,6 @@ void run_heat_capacity() {
                       << " e_tot " << std::setw(12) << e
                       << " temp " << std::setw(4) << t << "\n";
             last_print_t = begin_t;
-
-            // log total energy
-            write_energy(energy_file, begin_t, e);
-            write_energy(epot_file, begin_t, e_pot);
-            write_energy(ekin_file, begin_t, e_kin);
-            write_energy(temp_file, begin_t, t);
             //write_xyz(get_traj_filename(), atoms);
 
             // update neighbors
@@ -159,9 +146,6 @@ void run_heat_capacity() {
         }
     }
 
-    energy_file.close();
-    epot_file.close();
-    ekin_file.close();
     interval_energy_file.close();
     interval_temp_file.close();
 }

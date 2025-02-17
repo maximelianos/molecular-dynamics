@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     std::ofstream ekin_file("kinetic_energy.txt");
 
     double equi_t = end_t / 10;
-    double cutoff = sigma * 4;
+    double cutoff = sigma * 3;
 
     NeighborList neighbor_list;
     neighbor_list.update(atoms, cutoff);
@@ -90,8 +90,9 @@ int main(int argc, char **argv) {
         double relaxation_t = end_t / 100;
         if (begin_t < equi_t) {
             relaxation_t = end_t / 100;
+            berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t);
         }
-        berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t);
+
 
         if (begin_t - last_print_t > print_freq_t) {
             double avg_tot_r = avg_tot.result();

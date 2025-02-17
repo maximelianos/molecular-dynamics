@@ -340,47 +340,53 @@ milestones/04/main.cpp
 	\label{fig:first_simulation_ovito}
 \end{figure*}
 
+I find that two aspects make the simulation successful: {\bf grid step} close to optimum of Lennard-Jones, and {\bf low target temperature} used in thermostat.
 
-I create a cube of atoms of width 6 for this experiment, Fig.~\ref{fig:first_simulation_ovito}
+I create a cube of atoms of width 6 for this experiment, Fig.~\ref{fig:first_simulation_ovito}. The most stable configuration is where the grid step is $r = 2^{1/6}\sigma$, we know that to be the minimum of Lennard-Jones potential. Experiments with different $r$ behaved very badly.
 
-Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.001 --- no vaporization.
+At first I tried a high target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.001 --- no vaporization. For this temperature, I choose Berendsen relaxation time (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)). Initially for $10$ time units I apply relaxation \( \tau_T = 1 \). Then for the whole simulation, \( \tau_T = 10 \) is required to keep the atoms from evaporating. 
 
-Choosing Berendsen relaxation time (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)): for the whole simulation, \( \tau_T = 10 \) is required to keep the atoms from evaporating. Initially for $10$ time units I apply \( \tau_T = 1 \).
+In a second experiment I took a lower temperature $0.0001$. With this temperature it's enough to apply the thermostat only in the beginning for $10t$ with relaxation $\tau_T = 1$. After equilibration I can disable the thermostat and the system stays stable.
 
 Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the desired value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
 
-{\bf Implementation} --- src/lattice.cpp, src/lattice.h, src/thermostat.cpp, src/thermostat.h, tests/test\_thermostat.cpp milestones/05/main.cpp
+{\bf Implementation}
+\begin{lstlisting}[breaklines]
+src/lattice.cpp
+src/lattice.h
+src/thermostat.cpp
+src/thermostat.h,
+tests/test_thermostat.cpp
+milestones/05/main.cpp
+\end{lstlisting}
+
 
 \subsection*{Neighbor list}
 
 \begin{figure*}[htb]
 	\centering
-	\includegraphics[width=.3\linewidth]{img/fig_pairwise.pdf}
-	\caption{Without cutoff, time scales quadratically with number of atoms.}
-	\label{fig:berendsen_time_pair}
+	\includegraphics[width=.8\linewidth]{img/milestone06-time.pdf}
+	\caption{Without neighbor list, time scales quadratically with number of atoms.}
+	\label{fig:neighbor}
 \end{figure*}
 
-\begin{figure*}[htb]
-	\centering
-	\includegraphics[width=.3\linewidth]{img/fig_neighbor.pdf}
-	\caption{With cutoff, time scales linearly with number of atoms.}
-	\label{fig:berendsen_time_neighbor}
-\end{figure*}
+The provided implementation of neighbor lists is used. Cutoff radius is \( 3 \sigma \) to allow speedup, but not miss interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:neighbor} . Number of atoms: $3^3=27, 4^3=64, 5^3=125, 6^3=216, 7^3=343, 8^3=512$.
 
-The provided implementation of neighbor lists is used. Cutoff radius is \( 4 \sigma \) to allow speedup, but not miss important interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:berendsen_time_pair} and Fig.~\ref{fig:berendsen_time_neighbor}. Number of atoms: $2^3=8, 3^3=27, 4^3=64, 5^3=125$.
+{\bf Implementation}
+\begin{lstlisting}[breaklines]
+src/neighbors.cpp,
+src/neighbors.h,
+tests/test_neighbors.cpp,
+src/lj.cpp,
+src/lj.h,
+tests/test_thermostat.cpp
+milestones/06/main.cpp
+\end{lstlisting}
 
-LATTICE $r = 2^{1/6}\sigma$
-
-{\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/06/main.cpp
-
-Run: \verb|cd buildDir/milestones/06; time ./milestone06 [n]|
-
-\verb|lj_direct_summation|
-\verb|lj_neighbor_list|
-\verb|optimization level 3|
-
+{\bf Run details}
 \begin{itemize}
-	\item Outputs are generated in \verb|buildDir/milestones/05|
+	\item Optimization level 3 must be enable before compilation.
+	\item Run: \verb|cd buildDir/milestones/06; time ./milestone06 [n]|
 	\item Plot with \verb|plot/time_lineplot.ipynb|
 \end{itemize}
 
