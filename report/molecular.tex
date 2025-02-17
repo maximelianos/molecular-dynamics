@@ -178,8 +178,6 @@ As the molecular dynamics system evolves, potential energy decreases and kinetic
 
 \subsection*{Embedded Atom Method potential}
 
-TODO cite Cleri Rosato
-
 The EAM models attraction with the local electron density, and repulsion with a pairwise term. This potential has parameters that must be estimated for each type of atom experimentally, in this report we use gold (Au).
 
 Force is the derivative of energy by position:
@@ -520,20 +518,57 @@ milestones/08/main.cpp
 
 \subsection*{Pulling a gold nanowire}
 
+Here we use a gold rod with periodicity along Z axis. The distance between the end and the periodical beginning of the rod must be on the order of potential optimum, otherwise the system will explode or be disconnected. I equilibrate the temperature using Berendsen thermostat in the beginning of simulation. After that domain scaling along Z axis is applied, which causes strain inside the material.
+
+I used temperatures 300 and 500 K; deformation length 10 and 20 angstrem. Total duration was 100 000 fs which causes a deformation of $10^{-4}$ A/fs in the first case.
+
+We observe the measured stress force over strain (Fig.~\ref{fig:whisker-300},~\ref{fig:whisker-500}). The stress force was averaged over 5000 fs which allows us to see the clear pattern of defect formation.
+
+For the 300 K room temperature, the faster elongation breaks the wire more significantly, because stress drops much more and doesn't recover with time. The temperature is low, thus the material is more brittle.
+
+For 500 K the situation is much different. Firstly, the stress changes more slowly, the material starts regrouping on lower values of stress (strain=10 A, at t=300 K max=0.0045, while at t=500 K max=0.0035) and also recovers better. Especially for the fast stretching, the rod completely broke only at the end. It looks like with higher temperature the material can flow more freely, but still forms regular solid-like structures locally. That explains that the stress doesn't go completely down.
+
+For visualization of defects I found slice operation in OVITO and used Common Neighbor Analysis (Fig.~\ref{fig:whisker-defect}). The atoms have shifted, but preserve the local grid structure, which is natural for low temperatures.
+
+\begin{figure*}[h!]
+	\centering
+	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-10.pdf}
+	\caption{Small whisker, 300 K, elongation by 10 A.}
+	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-20.pdf}
+	\caption{Small whisker, 300 K, elongation by 20 A.}
+	\label{fig:whisker-300}
+\end{figure*}
+
+\begin{figure*}[h!]
+	\centering
+	\includegraphics[width=.85\linewidth]{img/milestone09-small-500-10.pdf}
+	\caption{Small whisker, 500 K, elongation by 10 A.}
+	\includegraphics[width=.85\linewidth]{img/milestone09-small-500-20.pdf}
+	\caption{Small whisker, 500 K, elongation by 20 A.}
+	\label{fig:whisker-500}
+\end{figure*}
+
+\begin{figure*}[h!]
+	\centering
+	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-10-pic.png}
+	\caption{Small whisker, 300 K, elongation by 10 A. The rod is sliced in half, in red we see the break point.}
+	\label{fig:whisker-defect}
+\end{figure*}
 
 
-End must match beginning
-Set temperature using Berendsen
-
-
-strain start: 144.25
-
+{\bf Run details}
 \begin{lstlisting}[breaklines]
 cd buildDir/milestones/09
 mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
+sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
 \end{lstlisting}
 
+{\bf Implementation}
+\begin{lstlisting}[breaklines]
+milestones/09/main.cpp
+\end{lstlisting}
 
+\clearpage
 \section{Conclusion}
 \label{conclusion}
 
