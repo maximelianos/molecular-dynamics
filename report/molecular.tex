@@ -98,6 +98,8 @@ v_i(t + \Delta t/2) = v_i(t) + \cfrac{1}{2m_i} f_i(t) \Delta t
 \]
 \[ r_i(t+\Delta t) = r_i(t) + v_i(t+ \Delta t/2) \Delta t \]
 
+After this step we must recompute the forces for the new positions.
+
 Corrector step:
 \[ v_i(t+\Delta t) = v_i(t+\Delta t/2) + \cfrac{1}{2m_i}f_i(t+\Delta t) \Delta t \]
 
@@ -230,7 +232,7 @@ Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
 
 \subsection*{Domain decomposition}
 
-We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn the same amount of parallel processes as there are subdomains. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than $2 * cutoff$ for EAM potential.
+We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn an MPI process for each subdomain. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than $2 * cutoff$ for EAM potential.
 
 The processes have to communicate the atom movement between subdomains and ghost atoms with the neighboring subdomains. Each subdomain has $9+8+9=26$ neighbors in 3D. To avoid pair-wise communication between them, we execute send-receive (Fig.~\ref{fig:domain-communication}):
 
@@ -257,10 +259,10 @@ This way it takes 6 steps instead of 26 for each process to get all information 
 For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix.
 
 \[
-\sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}^T_{ij} \times \mat{f}_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}^T_{ij} \times \mat{f}_{ij},
+\sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}_{ij} \times \mat{f}^T_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}_{ij} \times \mat{f}^T_{ij},
 \]
 
-where $\sigma\ (3, 3)$ - stress matrix for $xx, xy, \ldots zz$ directions, $V$ - total volume, $\mat{r}^T_{ij}\ (1, 3)$ - position, $\mat{f}_{ij}\ (3, 1)$ - force.
+where $\sigma\ (3, 3)$ - stress matrix for $xx, xy, \ldots zz$ directions, $V$ - total volume, $\mat{r}_{ij}\ (3, 1)$ - position, $\mat{f}^T_{ij}\ (1, 3)$ - force.
 
 As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from this matrix (in experiments all other entries are near 0). The stress is per-atom, can be computed separately in each subdomain and then summed.
 
@@ -271,7 +273,7 @@ As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from
 \section{Implementation and results}
 \label{implementation}
 
-Note! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
+Warning! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
 
 Code is structured in folders:
 \begin{itemize}
@@ -285,14 +287,34 @@ Code is structured in folders:
 \subsection*{First simulation}
 In the first simulation, we don't care about physical units, and just set \( m=1, \sigma=1, \epsilon=1 \). Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), the atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).  
 
-Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)): 0.001 --- OVITO visualization shows that most of atoms evaporate and fly into infinity; 0.00001 --- most atoms stay together, while some still evaporate. We can also detect evaporation if potential energy increases and kinetic energy doesn't change. The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}.
+Choice of the time step (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)):
 
-{\bf Implementation} --- src/lj\_direct\_summation.cpp, src/lj\_direct\_summation.h, tests/test\_lj\_direct\_summation.cpp, src/xyz.cpp, src/xyz.h, tests/test\_verlet.cpp, milestones/04/main.cpp
+\begin{enumerate}
+	\item 0.05 or higher - immediate explosion
+	\item 0.01 - already stable simulation, OVITO shows some atoms evaporate
+	\item 0.001 or 0.0001 - similar result, drift in total energy is less than 0.01 eV. Some atoms still evaporate.
+\end{enumerate}
+
+The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}.
+
+{\bf Implementation}
+\begin{lstlisting}[breaklines]
+src/lj_direct_summation.cpp, 
+src/lj_direct_summation.h,
+tests/test_lj_direct_summation.cpp,
+src/xyz.cpp,
+src/xyz.h,
+tests/test_verlet.cpp,
+milestones/04/main.cpp
+\end{lstlisting}
+
+
+{\bf Plot} --- \verb|plot/energy_lineplot.ipynb|
 
 \begin{figure*}[htb]
 	\centering
-	\includegraphics[width=.7\linewidth]{img/fig_total_energy.pdf}
-	\caption{Less atoms evaporate with very small time step.}
+	\includegraphics[width=.7\linewidth]{img/milestone04-total.pdf}
+	\caption{With smaller step the simulation is more stable.}
 	\label{fig:first_simulation}
 \end{figure*}
 
@@ -319,11 +341,11 @@ Experimentally choosing the time step (multiplied by \( \sqrt{m\sigma^2 / \epsil
 \end{figure*}
 
 
-I create a cube of atoms of width 4 for this experiment, Fig.~\ref{fig:first_simulation_ovito}
+I create a cube of atoms of width 6 for this experiment, Fig.~\ref{fig:first_simulation_ovito}
 
-Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.005 --- no vaporization.
+Choosing target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.001 --- no vaporization.
 
-Choosing Berendsen relaxation time: for the whole simulation, \(1000\Delta t\) is required to keep the atoms from evaporating; initial stronger relaxation didn't make a difference.
+Choosing Berendsen relaxation time (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)): for the whole simulation, \( \tau_T = 10 \) is required to keep the atoms from evaporating. Initially for $10$ time units I apply \( \tau_T = 1 \).
 
 Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the desired value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
 
@@ -347,9 +369,11 @@ Testing the Berendsen implementation is very simple, because it modifies the spe
 
 The provided implementation of neighbor lists is used. Cutoff radius is \( 4 \sigma \) to allow speedup, but not miss important interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:berendsen_time_pair} and Fig.~\ref{fig:berendsen_time_neighbor}. Number of atoms: $2^3=8, 3^3=27, 4^3=64, 5^3=125$.
 
+LATTICE $r = 2^{1/6}\sigma$
+
 {\bf Implementation} --- src/neighbors.cpp, src/neighbors.h, tests/test\_neighbors.cpp, src/lj.cpp, src/lj.h, tests/test\_thermostat.cpp milestones/06/main.cpp
 
-Run: \verb|cd buildDir/milestones/06; time ./milestone06|
+Run: \verb|cd buildDir/milestones/06; time ./milestone06 [n]|
 
 \verb|lj_direct_summation|
 \verb|lj_neighbor_list|

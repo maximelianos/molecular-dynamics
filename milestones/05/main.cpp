@@ -47,44 +47,50 @@ int main() {
     // simulation time
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
-    std::ofstream energy_file("total_energy_001.txt");
-    std::ofstream epot_file("potential_energy_001.txt");
-    std::ofstream ekin_file("kinetic_energy_001.txt");
+    Average avg_tot; // compute averages over intervals
+    std::ofstream energy_file("total_energy.txt");
+    std::ofstream epot_file("potential_energy.txt");
+    std::ofstream ekin_file("kinetic_energy.txt");
 
     // time for equilibration
-    double equi_t = step_t * 1000;
+    double equi_t = end_t / 10;
 
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
+        // Integrator step 1
+        verlet_step1(atoms, step_t, m);
+
         // compute forces
         double e_pot = lj_direct_summation(atoms, epsilon, sigma);
-        double e_kin = kinetic_energy(atoms);
-        double t = get_temperature(e_kin, atoms.nb_atoms());
 
-        // apply forces
-        verlet_step1(atoms, step_t, m);
+        // Integrator step 2
         verlet_step2(atoms, step_t, m);
-        double target_temp = 0.005;
-        double relaxation_t;
-        if (begin_t < equi_t) {
-            relaxation_t = step_t * 100;
-        } else {
-            relaxation_t = step_t * 1000;
-        }
 
+        double e_kin = kinetic_energy(atoms);
+        double e = e_pot + e_kin;
+        double t = get_temperature_lj(e_kin, atoms.nb_atoms());
+
+        avg_tot.add(e);
+
+        // thermostat
+        double target_temp = 0.001;
+        double relaxation_t = end_t / 10;
+        if (begin_t < equi_t) {
+            relaxation_t = end_t / 100;
+        }
         berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t);
 
-        // compute total energy
-        double e = e_pot + e_kin;
+
         if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(e_kin, atoms.nb_atoms());
+            double avg_tot_r = avg_tot.result();
             std::cout << "e_pot " << std::setw(12) << e_pot
                       << " e_kin " << std::setw(12) << e_kin
+                      << " e_tot " << std::setw(8) << avg_tot_r
                       << " t " << std::setw(4) << t << "\n";
 
             // log total energy

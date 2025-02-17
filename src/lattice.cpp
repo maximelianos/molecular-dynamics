@@ -9,9 +9,9 @@ Atoms cubic_lattice(int n, double sigma) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n; k++) {
-                atoms.positions(0, i*n*n + j*n + k) = i * sigma;
-                atoms.positions(1, i*n*n + j*n + k) = j * sigma;
-                atoms.positions(2, i*n*n + j*n + k) = k * sigma;
+                atoms.positions(0, i*n*n + j*n + k) = i * sigma * 1.13;
+                atoms.positions(1, i*n*n + j*n + k) = j * sigma * 1.13;
+                atoms.positions(2, i*n*n + j*n + k) = k * sigma * 1.13;
             }
         }
     }

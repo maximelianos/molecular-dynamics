@@ -46,38 +46,48 @@ int main() {
     double m = 1;
 
     // time step
-    double end_t = 10 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.00001 * std::sqrt(m * sigma * sigma / epsilon);
-    double last_print_t = 0;
+    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
+    // 0.1 X 0.05 X 0.01 V 0.005
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
-    int print_i = 0;
-    std::ofstream energy_file("total_energy.txt");
-    std::ofstream epot_file("potential_energy.txt");
-    std::ofstream ekin_file("kinetic_energy.txt");
 
     std::cout << "time step " << step_t << "\n";
 
+    double last_print_t = 0;
+    int print_i = 0;
+    Average avg_tot; // compute averages over intervals
+    std::ofstream energy_file("total_energy_01.txt");
+    std::ofstream epot_file("potential_energy.txt");
+    std::ofstream ekin_file("kinetic_energy.txt");
+
     for (; begin_t < end_t; begin_t += step_t) {
+        // Integrator step 1
+        verlet_step1(atoms, step_t, m);
+
         // compute forces
         double e_pot = lj_direct_summation(atoms, epsilon, sigma);
-        double e_kin = kinetic_energy(atoms);
-        // apply forces
-        verlet_step1(atoms, step_t, m);
+
+        // Integrator step 2
         verlet_step2(atoms, step_t, m);
-        // compute total energy
+
+        double e_kin = kinetic_energy(atoms);
         double e = e_pot + e_kin;
+        avg_tot.add(e);
+
         if (begin_t - last_print_t > print_freq_t) {
-            double t = get_temperature(e_kin, atoms.nb_atoms());
+            double avg_tot_r = avg_tot.result();
+            double t = get_temperature_lj(e_kin, atoms.nb_atoms());
             std::cout << "e_pot " << std::setw(8) << e_pot
                       << " e_kin " << std::setw(8) << e_kin
-                      << " e_tot " << std::setw(8) << e
+                      << " e_tot " << std::setw(8) << avg_tot_r
                       << " t " << std::setw(4) << t << "\n";
 
             // log total energy
-            write_energy(energy_file, begin_t, e);
+            write_energy(energy_file, begin_t, avg_tot_r);
             write_energy(epot_file, begin_t, e_pot);
             write_energy(ekin_file, begin_t, e_kin);
+
             // log positions of atoms
             last_print_t = begin_t;
             std::string num = std::to_string(print_i);
