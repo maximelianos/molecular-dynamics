@@ -50,7 +50,7 @@ class TextLog {
 public:
     TextLog() {}
 
-    TextLog(char *energy_filename, char *temp_filename, char *stress_filename) {
+    TextLog(std::string energy_filename, std::string temp_filename, std::string stress_filename) {
         energy_file_.open(energy_filename);
         temp_file_.open(temp_filename);
         stress_file_.open(stress_filename);
@@ -64,9 +64,25 @@ public:
 };
 
 
-void run_heat_capacity() {
-    double end_strain = 150.0;
+int main(int argc, char **argv) {
+    // usage: ./milestone09 temp total_strain file.xyz experiment_name
+    // for example: mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
+    MPI_Init(&argc, &argv);
+
+    double target_temp = 300.0;
+    double strain = 5.0;
+    std::string atoms_file = "whisker_small.xyz";
+    std::string exp_name = "exp";
+    if (argc >= 4) {
+        target_temp = atof(argv[1]);
+        strain = atof(argv[2]);
+        atoms_file = argv[3];
+        exp_name = argv[4];
+    }
+
     double begin_strain = 144.25;
+    double end_strain = begin_strain + strain;
+
 
     // How many processors do we have?
     int size;
@@ -78,18 +94,18 @@ void run_heat_capacity() {
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("whisker_small.xyz")}; // 923, 3871
+    auto [names, positions]{read_xyz(atoms_file)}; // 923, 3871
     Atoms atoms(positions);
     int global_nb_atoms = atoms.nb_atoms();
 
     // time in femtosec
     double begin_t = 0;
-    double end_t = 50000;
+    double end_t = 100000;
     double step_t = 10;
 
     // equilibration phase
     double equi_t = 1000;
-    double print_freq_t = 1000; // 1000
+    double print_freq_t = 5000; // 1000
 
     double last_print_t = 0;
     int print_i = 0;
@@ -102,9 +118,9 @@ void run_heat_capacity() {
         return traj_file;
     };
 
-    double temp_sum = 0;
-    double e_tot_sum = 0;
-    double stress_sum = 0;
+    Average counter_temp;
+    Average counter_e;
+    Average counter_stress;
 
     double cutoff = 8.0;
 
@@ -116,11 +132,9 @@ void run_heat_capacity() {
 
     TextLog logger;
     if (rank == 0) {
-        logger = TextLog("energy.txt", "temperature.txt", "stress.txt");
+        logger = TextLog("energy.txt", "temperature.txt", "stress-" + exp_name + ".txt");
         std::cout << "time step " << step_t << "\n";
     }
-
-
 
     for (; begin_t < end_t; begin_t += step_t) {
         // Integrator step
@@ -150,7 +164,6 @@ void run_heat_capacity() {
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, global_nb_atoms);
 
-        double target_temp = 500;
         double relaxation_t;
         if (begin_t < equi_t) {
             relaxation_t = 500;
@@ -159,44 +172,35 @@ void run_heat_capacity() {
         }
         berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
 
-        temp_sum += t;
-        e_tot_sum += e;
-        stress_sum += stress;
+        counter_temp.add(t);
+        counter_e.add(e);
+        counter_stress.add(stress);
 
         if (begin_t > last_print_t + print_freq_t) {
             last_print_t = begin_t;
+            double avg_stress = counter_stress.result();
             if (rank == 0) {
                 std::cout << "local_atoms " << std::setw(4) << domain.nb_local()
                           << " with_ghost " << std::setw(4) << atoms.nb_atoms()
-                          << " e_pot " << std::setw(12) << e_pot
-                          << " e_kin " << std::setw(12) << e_kin
                           << " e_tot " << std::setw(12) << e
                           << " temp " << std::setw(8) << t
-                          << " stress " << std::setw(12) << stress_sum / (print_freq_t / step_t)
+                          << " stress " << std::setw(12) << avg_stress
                 << "\n";
             }
-            stress_sum = 0;
 
             domain.disable(atoms);
             if (rank == 0) {
-                logger.log(begin_t, e, t, stress);
+                logger.log(begin_t, e, t, avg_stress);
                 write_xyz(get_traj_filename(), atoms);
             }
-
-
             domain.enable(atoms);
+
             double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
             domain.scale(atoms, {40, 40, new_strain});
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);
         }
     }
-}
-
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-
-    run_heat_capacity();
 
     MPI_Finalize();
     return 0;

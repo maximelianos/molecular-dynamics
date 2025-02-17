@@ -479,8 +479,6 @@ I used the gold cluster Mackay-3871. With $\Delta t$ = 10 fs, total energy fluct
 
 One cause of instability was that atoms on the domain edge disappeared. Solution: add offset to atom positions, so that they don't drop out from the simulation domain.
 
-
-
 {\bf Run details}
 \begin{itemize}
 	\item Edit source code, set domain to (1, 2, 2)
@@ -510,7 +508,31 @@ One cause of instability was that atoms on the domain edge disappeared. Solution
 	\label{fig:parallel-3}
 \end{figure*}
 
+{\bf Implementation}
+\begin{lstlisting}[breaklines]
+src/mpi_support.h
+src/domain.h
+src/domain.cpp
+milestones/08/main.cpp
+\end{lstlisting}
+
 \clearpage % works for figures too!
+
+\subsection*{Pulling a gold nanowire}
+
+
+
+End must match beginning
+Set temperature using Berendsen
+
+
+strain start: 144.25
+
+\begin{lstlisting}[breaklines]
+cd buildDir/milestones/09
+mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
+\end{lstlisting}
+
 
 \section{Conclusion}
 \label{conclusion}

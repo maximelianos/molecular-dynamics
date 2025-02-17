@@ -61,7 +61,9 @@ public:
 };
 
 
-void run_heat_capacity() {
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+
     Domain domain(MPI_COMM_WORLD, {60.0, 60.0, 60.0}, {1, 1, 1}, {0, 0, 0});
     int rank = domain.rank();
 
@@ -167,12 +169,6 @@ void run_heat_capacity() {
             neighbor_list.update(atoms, cutoff);
         }
     }
-}
-
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-
-    run_heat_capacity();
 
     MPI_Finalize();
     return 0;
