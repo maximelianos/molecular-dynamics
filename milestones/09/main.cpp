@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, max_z}, {1, 1, size}, {0, 0, 1});
+    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, max_z+3.0}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
