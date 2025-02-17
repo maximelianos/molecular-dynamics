@@ -5,7 +5,6 @@ ssh fr_mv276@bwunicluster.scc.kit.edu # from email
 ssh fr_mv276@uc2.scc.kit.edu # from Pastewka
 ---
 1. Google Authenticator
-2. KakPravilno8!
 
 
 Dear Dr. Lars Pastewka,
@@ -47,4 +46,16 @@ sbatch run.job ./buildDir/milestones/09/milestone09 300.0 20 whisker_small.xyz 2
 Update from git:
 
 git pull; mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile && cd ..
-rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 1 whisker_small.xyz 1
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
+
+
+sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
+sbatch run.job ./buildDir/milestones/09/milestone09 300.0 50.0 whisker_large.xyz 2
+sbatch run.job ./buildDir/milestones/09/milestone09 300.0 100.0 whisker_large.xyz 3
+
+sbatch run.job ./buildDir/milestones/09/milestone09 500.0 50.0 whisker_large.xyz 4
+sbatch run.job ./buildDir/milestones/09/milestone09 500.0 100.0 whisker_large.xyz 4
+
+zip -r traj.zip traj*xyz && mv traj.zip ~
+scp fr_mv276@uc2.scc.kit.edu:traj.zip .
+

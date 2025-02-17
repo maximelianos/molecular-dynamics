@@ -69,7 +69,6 @@ int main(int argc, char **argv) {
     // for example: mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
     MPI_Init(&argc, &argv);
 
-    std::cout << "RECEIVED " << argc << "ARGUMENTS\n";
     double target_temp = 300.0;
     double strain = 5.0;
     std::string atoms_file = "whisker_small.xyz";
@@ -85,6 +84,8 @@ int main(int argc, char **argv) {
     auto [names, positions]{read_xyz(atoms_file)}; // 923, 3871
     Atoms atoms(positions);
     int global_nb_atoms = atoms.nb_atoms();
+    double max_x = positions(0, Eigen::all).maxCoeff();
+    double max_y = positions(1, Eigen::all).maxCoeff();
     double max_z = positions(2, Eigen::all).maxCoeff();
 
     double begin_strain = max_z + 1.0;
@@ -94,7 +95,7 @@ int main(int argc, char **argv) {
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, begin_strain}, {1, 1, size}, {0, 0, 1});
+    Domain domain(MPI_COMM_WORLD, {max_x + 10.0, max_y + 10.0, begin_strain}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
