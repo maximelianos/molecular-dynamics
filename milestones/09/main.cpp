@@ -193,10 +193,10 @@ int main(int argc, char **argv) {
                 logger.log(begin_t, e, t, avg_stress);
                 write_xyz(get_traj_filename(), atoms);
             }
-            domain.enable(atoms);
 
             double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
             domain.scale(atoms, {40, 40, new_strain});
+            domain.enable(atoms);
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);
         }
