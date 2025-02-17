@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     int global_nb_atoms = atoms.nb_atoms();
     double max_z = positions(2, Eigen::all).maxCoeff();
 
-    double begin_strain = max_z + 3.0;
+    double begin_strain = max_z + 1.0;
     double end_strain = begin_strain + strain;
 
     // How many processors do we have?
