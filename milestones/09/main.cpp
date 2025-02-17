@@ -80,23 +80,25 @@ int main(int argc, char **argv) {
         exp_name = argv[4];
     }
 
-    double begin_strain = 144.25;
-    double end_strain = begin_strain + strain;
+    // load gold cluster
+    auto [names, positions]{read_xyz(atoms_file)}; // 923, 3871
+    Atoms atoms(positions);
+    int global_nb_atoms = atoms.nb_atoms();
+    double max_z = positions(2, Eigen::all).maxCoeff();
 
+    double begin_strain = max_z;
+    double end_strain = begin_strain + strain;
 
     // How many processors do we have?
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, 144.25}, {1, 1, size}, {0, 0, 1});
+    Domain domain(MPI_COMM_WORLD, {40.0, 40.0, max_z}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
 
-    // load gold cluster
-    auto [names, positions]{read_xyz(atoms_file)}; // 923, 3871
-    Atoms atoms(positions);
-    int global_nb_atoms = atoms.nb_atoms();
+
 
     // time in femtosec
     double begin_t = 0;
@@ -194,9 +196,9 @@ int main(int argc, char **argv) {
                 write_xyz(get_traj_filename(), atoms);
             }
 
+            domain.enable(atoms);
             double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
             domain.scale(atoms, {40, 40, new_strain});
-            domain.enable(atoms);
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);
         }

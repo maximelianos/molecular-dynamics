@@ -37,7 +37,7 @@ module load compiler/gnu mpi/openmpi
 git clone https://github.com/maximelianos/molecular-dynamics.git
 cp lj54.xyz molecular-dynamics/milestones/04 && cp cluster_923.xyz molecular-dynamics/milestones/07 && cp cluster_3871.xyz molecular-dynamics/milestones/07
 
-mkdir buildDir && meson setup buildDir --buildtype=release && cd buildDir && meson compile
+mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile
 cp whisker_*.xyz molecular-dynamics
 
 sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10 whisker_small.xyz 1
