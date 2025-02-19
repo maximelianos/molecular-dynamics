@@ -42,7 +42,8 @@ Update from git:
 git pull; mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile && cd ..
 rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
 
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
+
 sbatch run.job ./buildDir/milestones/09/milestone09 300.0 50.0 whisker_large.xyz 2
 sbatch run.job ./buildDir/milestones/09/milestone09 300.0 100.0 whisker_large.xyz 3
 
