@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     int global_nb_atoms = atoms.nb_atoms();
 
     // automatically deduce the domain
-    double dom_x = positions(0, Eigen::all).maxCoeff(); + 5.0;
+    double dom_x = positions(0, Eigen::all).maxCoeff() + 5.0;
     double dom_y = positions(1, Eigen::all).maxCoeff() + 5.0;
 
     // strain range
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     int print_i = 0;
 
     // log positions of atoms
-    auto get_traj_filename = [&print_i] -> std::string {
+    auto get_traj_filename = [](int &print_i) -> std::string {
         std::string num = std::to_string(print_i);
         const int num_zeros = 4;
         std::string traj_file = "traj" + std::string(num_zeros - num.length(), '0') + num + ".xyz";
@@ -205,14 +205,13 @@ int main(int argc, char **argv) {
                           << " e_tot " << std::setw(12) << e
                           << " temp " << std::setw(8) << t
                           << " stress " << std::setw(12) << avg_stress
-                          << " new strain " << std::setw(12) << new_strain
                 << "\n";
             }
 
             domain.disable(atoms);
             if (rank == 0) {
                 logger.log(begin_t, e, t, avg_stress);
-                write_xyz(get_traj_filename(), atoms);
+                write_xyz(get_traj_filename(print_i), atoms);
             }
             domain.enable(atoms);
 
