@@ -91,12 +91,11 @@ int main(int argc, char **argv) {
     int global_nb_atoms = atoms.nb_atoms();
 
     // automatically deduce the domain
-    double max_x = positions(0, Eigen::all).maxCoeff();
-    double max_y = positions(1, Eigen::all).maxCoeff();
-    double max_z = positions(2, Eigen::all).maxCoeff();
+    double dom_x = positions(0, Eigen::all).maxCoeff(); + 5.0;
+    double dom_y = positions(1, Eigen::all).maxCoeff() + 5.0;
 
     // strain range
-    double begin_strain = max_z + 1.0;
+    double begin_strain = positions(2, Eigen::all).maxCoeff() + 1.0; // decided by EAM minimum, end must match begin!
     double end_strain = begin_strain + strain;
 
     // How many processors do we have?
@@ -104,7 +103,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // initialize domain
-    Domain domain(MPI_COMM_WORLD, {max_x + 40.0, max_y + 40.0, begin_strain}, {1, 1, size}, {0, 0, 1});
+    Domain domain(MPI_COMM_WORLD, {dom_x, dom_y, begin_strain}, {1, 1, size}, {0, 0, 1});
     int rank = domain.rank();
 
     // mass of a gold atom
@@ -117,7 +116,7 @@ int main(int argc, char **argv) {
 
     // equilibration phase
     double equi_t = 2000;
-    double print_freq_t = 5000; // 1000
+    double print_freq_t = 1000; // 1000
 
     // printing status
     double last_print_t = 0;
@@ -186,7 +185,7 @@ int main(int argc, char **argv) {
 
         // equilibration phase
         if (begin_t < equi_t) {
-            double relaxation_t = 500;
+            double relaxation_t = 1000;
             berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
         }
 
@@ -199,12 +198,14 @@ int main(int argc, char **argv) {
             // print statistics
             last_print_t = begin_t;
             double avg_stress = counter_stress.result();
+            double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
             if (rank == 0) {
                 std::cout << "local_atoms " << std::setw(4) << domain.nb_local()
                           << " with_ghost " << std::setw(4) << atoms.nb_atoms()
                           << " e_tot " << std::setw(12) << e
                           << " temp " << std::setw(8) << t
                           << " stress " << std::setw(12) << avg_stress
+                          << " new strain " << std::setw(12) << new_strain
                 << "\n";
             }
 
@@ -216,8 +217,8 @@ int main(int argc, char **argv) {
             domain.enable(atoms);
 
             // rescale domain, update ghost atoms
-            double new_strain = (begin_t / end_t) * (end_strain - begin_strain) + begin_strain;
-            domain.scale(atoms, {40, 40, new_strain});
+
+            domain.scale(atoms, {dom_x, dom_y, new_strain});
             domain.update_ghosts(atoms, cutoff * 2); // for Ducastelle
             neighbor_list.update(atoms, cutoff);
         }

@@ -1,20 +1,10 @@
 This work was performed on the computational resource bwUniCluster funded by the Ministry of Science, Research and the Arts Baden-Württemberg and the Universities of the State of Baden-Württemberg, Germany, within the framework program bwHPC
 
 
-ssh fr_mv276@bwunicluster.scc.kit.edu # from email
-ssh fr_mv276@uc2.scc.kit.edu # from Pastewka
----
+ssh fr_mv276@bwunicluster.scc.kit.edu
+
 1. Google Authenticator
-
-
-Dear Dr. Lars Pastewka,
-
-I have failed the Molecular Dynamics report in the previous semester, for the retake this semester I need to submit the report until 17.02, is that correct?
-
-Kind regards,
-Maksim Velikanov
-matrikelnummer 577 8429
-
+2. Password
 
 ======
 
@@ -29,8 +19,12 @@ Run
 mpirun -n 1 ./milestone08
 mpirun -n 4 --oversubscribe ./milestone08
 
-scp my_interesting_file fr_mv276@uc2.scc.kit.edu:
+Local:
+mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
 
+Cluster:
+
+scp my_interesting_file fr_mv276@uc2.scc.kit.edu:
 module load compiler/gnu mpi/openmpi
 
 git clone https://github.com/maximelianos/molecular-dynamics.git
