@@ -24,8 +24,11 @@ mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
 
 Cluster:
 
-scp my_interesting_file fr_mv276@uc2.scc.kit.edu:
 module load compiler/gnu mpi/openmpi
+
+First launch:
+
+scp my_interesting_file fr_mv276@uc2.scc.kit.edu:
 
 git clone https://github.com/maximelianos/molecular-dynamics.git
 cp lj54.xyz molecular-dynamics/milestones/04 && cp cluster_923.xyz molecular-dynamics/milestones/07 && cp cluster_3871.xyz molecular-dynamics/milestones/07
@@ -33,32 +36,29 @@ cp lj54.xyz molecular-dynamics/milestones/04 && cp cluster_923.xyz molecular-dyn
 mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile
 cp whisker_*.xyz molecular-dynamics
 
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10 whisker_small.xyz 1
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 20 whisker_small.xyz 2
-
 
 Update from git:
 
 git pull; mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile && cd ..
-rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
-
 rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 1
 
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 50.0 whisker_large.xyz 2
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 100.0 whisker_large.xyz 3
-
-sbatch run.job ./buildDir/milestones/09/milestone09 500.0 50.0 whisker_large.xyz 4
-sbatch run.job ./buildDir/milestones/09/milestone09 500.0 100.0 whisker_large.xyz 4
-
-rm ../traj.zip; zip -r traj.zip traj*xyz && mv traj.zip ~
+rm ../traj.zip; zip -r traj.zip traj*xyz stress*txt && mv traj.zip ~
 scp fr_mv276@uc2.scc.kit.edu:traj.zip .
 
 =====
 
 Milestone 9
 1. t=300 strain=10
-2. t=300 strain=20
+2. t=300 strain=15
 
 
-3. t=500 strain=10
-4. t=500 strain=20
+3. t=350 strain=10
+4. t=350 strain=15
+
+5. t=200 strain=15
+
+10. whisker_large t=300 strain=10
+11. t=300 strain=15
+
+12. whisker_large t=350 strain=10
+13. t=350 strain=15
