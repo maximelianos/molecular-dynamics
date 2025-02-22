@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 
     // equilibration phase
     double equi_t = 2000;
-    double print_freq_t = 1000; // 1000
+    double print_freq_t = 5000;
 
     // printing status
     double last_print_t = 0;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     Average counter_e;
     Average counter_stress;
 
-    double cutoff = 8.0;
+    double cutoff = 8.0; // 8.0
 
     domain.enable(atoms);
     std::cout << "rank " << domain.rank() << " atoms " << atoms.nb_local << "\n";
@@ -184,10 +184,11 @@ int main(int argc, char **argv) {
         double t = get_temperature(e_kin, global_nb_atoms);
 
         // equilibration phase
+        double relaxation_t = 5000;
         if (begin_t < equi_t) {
-            double relaxation_t = 1000;
-            berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
+          relaxation_t = 500;
         }
+        berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t, m);
 
         // compute averages
         counter_temp.add(t);

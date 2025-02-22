@@ -53,3 +53,12 @@ sbatch run.job ./buildDir/milestones/09/milestone09 500.0 100.0 whisker_large.xy
 rm ../traj.zip; zip -r traj.zip traj*xyz && mv traj.zip ~
 scp fr_mv276@uc2.scc.kit.edu:traj.zip .
 
+=====
+
+Milestone 9
+1. t=300 strain=10
+2. t=300 strain=20
+
+
+3. t=500 strain=10
+4. t=500 strain=20
