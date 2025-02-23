@@ -51,7 +51,6 @@ Milestone 9
 1. t=300 strain=10
 2. t=300 strain=15
 
-
 3. t=350 strain=10
 4. t=350 strain=15
 
@@ -62,3 +61,6 @@ Milestone 9
 
 12. whisker_large t=350 strain=10
 13. t=350 strain=15
+
+14. t=300 strain=20
+15. t=300 strain=30
