@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 
     // equilibration phase
     double equi_t = 2000;
-    double print_freq_t = 5000;
+    double print_freq_t = 500;
 
     // printing status
     double last_print_t = 0;
