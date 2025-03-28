@@ -28,7 +28,7 @@
 \newcommand{\htext}{0.46\textwidth}
 \newcommand{\hstext}{0.45\textwidth}
 
-\newcommand{\mat}[1]{\overline{#1}}
+\newcommand{\mat}[1]{\vec{#1}}
 \newcommand{\framed}[1]{\tikz[baseline=(char.base)]{\node[shape=rectangle,draw,inner sep=4pt] (char) {#1};}}
 
 %opening
@@ -66,20 +66,20 @@
 
 \section{Introduction}
 
-The implemented program is capable of generating a cubic lattice or using a precomputed one; running the simulation under control without the cluster vaporizing; monitoring the energies; saving the cluster for visualization; heating the cluster and measuring the melting point and latent heat; running parallel simulation with OpenMPI; stretching a golden whisker and measuring stress.
+In this project I implemented a Molecular Dynamics simulation in C++ consisting of individual atoms, based on the physics equations for interaction between atoms. The implemented program contains several experiments for testing and analysis of the simulation: generating a cubic lattice or using a precomputed icosahedron cluster; controlling the temperature of the simulation with a thermostat to prevent vaporization; monitoring the potential and kinetic energies; saving the atom positions to a file and visualization; heating the cluster and measuring the melting point and latent heat; running parallel simulation with OpenMPI; stretching a golden whisker and measuring stress.
 
-The theoretical base is present in \hyperref[methods]{methods}, the overview of implementation and results in \hyperref[implementation]{implementation}, and \hyperref[conclusion]{conclusion} at the end.
+The theoretical base is present in \hyperref[methods]{methods}, the details of implementation and results in \hyperref[experiments]{experiments}, and \hyperref[conclusion]{conclusion} at the end.
 
 \section{Methods}
 \label{methods}
 
-The key components of Molecular Dynamics are following:
+The key methods for modeling a physical system of atoms are following:
 
 \begin{enumerate}
 	\item Update atom position and velocity, given constant force for a small time step --- {\bf Velocity-Verlet integrator}
 	\item Estimate force between particles from the potential energy --- {\bf Lennard-Jones potential}
-	\item Prevent explosion of the system by connecting it to a constant-temperature heat bath --- {\bf Berendsen Thermostat}
-	\item More accurate N-body potential for modeling metals --- {\bf Embedded Atom Method potential}
+	\item Stabilization of the system by connecting it to a constant-temperature heat bath --- {\bf Berendsen Thermostat}
+	\item Physically accurate N-body potential for modeling metals --- {\bf Embedded Atom Method potential}
 	\item {\bf Domain decomposition} and parallel execution with OpenMPI
 	\item Application of an external force --- {\bf Stress estimation}
 \end{enumerate}
@@ -87,23 +87,23 @@ The key components of Molecular Dynamics are following:
 \newpage
 \subsection*{Velocity-Verlet integrator}
 
-The movement is approximated by assuming constant force and making small time steps. We take Newton's law and definition of velocity, using Taylor formula, we get the approximation equations. Was rediscovered by Loup Verlet \cite{verlet} for Molecular Dynamics simulation.
+The atom movement is approximated by assuming constant force and making small time steps. The method was rediscovered by Loup Verlet \cite{verlet} for Molecular Dynamics simulation.
 
+Vector form of Newton's law gives:
 \[ \dot{\mat{v}}_i(t) = \cfrac{\mat{f}_i(t)}{m_i} \]
+
+Definition of velocity:
 \[ \dot{\mat{r}}_i(t) = \mat{v}_i(t) \]
 
+From these two formulas we get the approximation equations using Taylor formula.
 Integration, predictor step:
 \[
 v_i(t + \Delta t/2) = v_i(t) + \cfrac{1}{2m_i} f_i(t) \Delta t
 \]
 \[ r_i(t+\Delta t) = r_i(t) + v_i(t+ \Delta t/2) \Delta t \]
 
-After this step we must recompute the forces for the new positions.
-
-Corrector step:
+After this step we must recompute the forces for new positions of atoms. Corrector step:
 \[ v_i(t+\Delta t) = v_i(t+\Delta t/2) + \cfrac{1}{2m_i}f_i(t+\Delta t) \Delta t \]
-
-{\bf Implementation} --- src/atoms.h, src/verlet.cpp, src/verlet.h, tests/test\_verlet.cpp
 
 \subsection*{Lennard Jones potential}
 
@@ -136,7 +136,7 @@ Let's compute for one of the dimensions.
 Remember: \( (\sqrt{u})' = \cfrac{1}{2\sqrt{u}} u' \)
 
 \[
-(*) = \cfrac{1}{2r_{ij}} \cfrac{(x_j-x_i)^2+\ldots}{\partial x_k} = \cfrac{1}{r_{ij}} \cdot (x_j-x_i) \cdot \Bigl(\cfrac{\partial x_j}{\partial x_k} - \cfrac{\partial x_i}{\partial x_k}\Bigr)
+(*) = \cfrac{1}{2r_{ij}} \cfrac{(x_j-x_i)^2+\ldots}{\partial x_k} = \cfrac{1}{r_{ij}} \ (x_j-x_i) \ \Bigl(\cfrac{\partial x_j}{\partial x_k} - \cfrac{\partial x_i}{\partial x_k}\Bigr)
 \]
 Here is a pair of atoms $i$ and $j$. We want the force for atom $k$. If \(k\neq i\) and \(k\neq j\), the expression is 0.
 
@@ -162,7 +162,7 @@ When we take the derivative of energy, only the pairs, where one of the atoms is
 Last piece in the puzzle is derivative of potential by distance.
 
 \[
-\cfrac{\partial V}{\partial r} = 4\epsilon (\sigma^{12} (-12) r^{-13} - \sigma^6\cdot 6\cdot r^{-7})
+\cfrac{\partial V}{\partial r} = 4\epsilon (\sigma^{12} (-12) r^{-13} - 6 \  \sigma^6 \ r^{-7})
 \]
 
 \subsection*{Berendsen thermostat}
@@ -194,43 +194,64 @@ where $\mat{f}_k$ is force on atom $k$, $r_k$ is position of atom $k$, $F(\rho)$
 
 \subsection*{EAM potential, time and mass units}
 
-We fix the length to angstrem (approximately distance between atoms) and energy to electron-volts (energy of a covalent bond) at first:
+We create a new convenient unit system for the simulation. First, fix the length to Angstrem (approximately distance between atoms) and energy to electron-volts (energy of a covalent bond):
 
 \begin{itemize}
-	\item length: Å, angstrem = 0,1nm. 1m = $10^{10}$ Å
-	\item energy: eV, electron-volts = qU Joules = 1 (elementary electrical charge) $* 1,602 * 10^{-19}$ Volts. 1 Joule = $\frac{1}{1U}$
+	\item length: Å, 1 angstrem = 0,1 nm. 1 meter = $10^{10}$ Å
+	\item energy: eV, electron-volts (elementary electrical charges) = qU Joules = $1,602 \cdot 10^{-19}$ Volts. 1 Joule = $1/U$ eV
 	\item velocity: $[l]/[t]$
 	\item acceleration: $[l]/[t]^2$
 	\item $f=ma$:       $[m][l]/[t]^2$
-	\item $[E]=[A]=[f*S]$:    $[m][l]^2/[t]^2$
+	\item $[E]=[A]=[fS]$:    $[m][l]^2/[t]^2$
 	\item $f$: $[E]/[l]$
 \end{itemize}
 
-Boltzmann constant in new unit system: \[ K_b = 1,38 * 10^{-23} \frac{J}{K} = \frac{1,38}{1,602} * 10^{-23} * 10^{+19} \text{eV/K} = 0,8614 * 10^{-4} = \underline{8,614 * 10^{-5} \text{eV/K}} \]
+Boltzmann constant in new unit system: \[ K_b = 1,38 \cdot 10^{-23} \frac{J}{K} = \frac{1,38}{1,602} \cdot 10^{-23} \cdot 10^{+19} \text{eV/K} = 0,8614 \cdot 10^{-4} = \underline{8,614 \cdot 10^{-5} \text{eV/K}} \]
 
-We fix \underline{[t] = 1 fs}. From this derive the unit of mass: 
+We fix \underline{[t] = 1 fs}. From this derive the unit of mass $[m]$: 
 
 \begin{gather*}
 	[E] = [m][l]^2/[t]^2\\
 	[m] = [E][t]^2/[l]^2\\
-	[m] = 1 \text{eV} * (1 \text{fs})^2 / (1 \text{Å}^2) =\\
-	1,602 * 10^{-19} J * 10^{-30} s * 10^{+20} m = 1,6 * 10^{-29} \text{kg}
+	[m] = \text{eV} \cdot \text{fs}^2 / \text{Å}^2 =\\
+	1,602 \cdot 10^{-19} J \cdot 10^{-30} s \cdot 10^{+20} m = 1,6 \cdot 10^{-29} \text{kg}
 \end{gather*}
 
 We can convert this to g/mol:
 \begin{center}
-	1mol $= 6.02 * 10^{23}$\\
-	1 g/mol = $\cfrac{10^{-3}}{6 * 10^{23}} $\\
-	1 kg = $6 * 10^{26}$ g/mol\\
-	$[m] = 1,6 * 10^{-29} * 6 * 10^{+26} \text{g/mol} = 9,6 * 10^{-3} =$ \underline{0,009649 g/mol}\\
+	1mol $= 6.02 \cdot 10^{23}$\\
+	1 g/mol = $\cfrac{10^{-3}}{6 \cdot 10^{23}}$ kg\\
+	1 kg = $6 \cdot 10^{26}$ g/mol\\
+	$[m] = 1,6 \cdot 10^{-29} \cdot 6 \cdot 10^{+26} \text{g/mol} = 9,6 \cdot 10^{-3} =$ \underline{0,009649 g/mol}\\
 	1 g/mol = $103,63\ [m]$
 \end{center}
 
-Now 1 gold atom has mass 196,96 * 103,63 $[m]$.
+In the new units 1 gold atom weighs $196,96 \cdot 103,63$ units of mass.
+
+\subsection*{Lennard Jones potential, time and mass units}
+
+To define a unit system, we need to fix three units. For Lennard Jones we set length to Angstrem, energy to electron-volts, and mass to one golden atom (in EAM we instead set the time unit).
+
+\begin{itemize}
+	\item length: Å, 1 Angstrem = $10^{-10}$ m
+	\item energy: 1 eV, electron-volts = $1,602 \cdot 10^{-19}$ Joules
+	\item $[E] = [m][l]^2/[t]^2$
+	\item mass of 1 gold atom $[m] = 197 / 6 \cdot 10^{-26}$ kg
+\end{itemize}
+
+From this I derive the time unit:
+
+\begin{center}
+	$[t]^2 = [m][l]^2/[E] =$\\
+	$[m] \cdot \ \text{Å}^2 / \text{eV}$ =\\
+	$197 / 6 \cdot 10^{-26}$ kg $\ \cdot \ 10^{-20}$ meter $\ / \ (1.602 \cdot 10^{-19})$ Joules =\\
+	$\cfrac{197}{6 \cdot 1.602} 10^{-46 + 19} s^2 = 20 \cdot 10^{-27} s^2$\\
+	$[t] = \sqrt{20 \cdot 10^{-27}} s = 1.42 \cdot 10^{-13} s =$ \underline{142 fs}
+\end{center}
 
 \subsection*{Domain decomposition}
 
-We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn an MPI process for each subdomain. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than $2 * cutoff$ for EAM potential.
+We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn an MPI process for each subdomain. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than cutoff radius multiplied by 2 for EAM potential.
 
 The processes have to communicate the atom movement between subdomains and ghost atoms with the neighboring subdomains. Each subdomain has $9+8+9=26$ neighbors in 3D. To avoid pair-wise communication between them, we execute send-receive (Fig.~\ref{fig:domain-communication}):
 
@@ -268,8 +289,8 @@ As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from
 
 \clearpage
 
-\section{Implementation and results}
-\label{implementation}
+\section{Experiments}
+\label{experiments}
 
 Warning! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
 
@@ -281,6 +302,49 @@ Code is structured in folders:
 	\item src --- common CPP files
 	\item tests --- CPP tests using Google test framework
 \end{itemize}
+
+\subsection*{Velocity-Verlet test}
+
+{\bf First test: constant acceleration.} For $m=1.0$, acceleration is equal to force. The movement distance under constant acceleration is well known: \[ S = v_0 t + \cfrac{at^2}{2} \]
+
+I define two atoms:\\
+first with position $r_1(1, 0, 0)$ and acceleration $a_1(1, 0, 0)$,\\
+second with position $r_2(0, 1, 0)$ and acceleration $a_2(0, -0.5, 0)$.\\
+Start velocity is 0 for simplicity. Following the formula, the resulting positions at $t = 10$ should be
+
+\[ r_1(x, t=10) = 1 + 0 + \cfrac{1 \cdot 100}{2} = 51 \]
+\[ r_2(y, t=10) = 1 + 0 - \cfrac{0.5 \cdot 100}{2} = -24 \]
+
+The Verlet timestep in this test can be chosen as large as possible, the computed result always matches the analytical one.
+
+{\bf Second test: linear acceleration.} I define acceleration as
+
+\[ a(t) = 1 - t,\; t \in [0, 1] \]
+
+Acceleration is derivative of velocity, so
+
+\[ a = \cfrac{dv}{dt} \]
+
+For a constant acceleration we use the well known formula \[ a = \frac{v_{end}-v_{start}}{t} \]
+
+But for variable acceleration
+
+\[ v(t) = \int_0^t a(t) dt + v_0 \]
+\[ S(t) = \int_0^t v(t) dt \]
+\[ S(t) = \int_0^t \left( \int_0^t a(t) dt + v_0 \right) dt\]
+
+Now compute S using my definition of acceleration, with start velocity 0 for simplicity:
+
+\[ v(t) = \int_0^t (1-t) dt = t - t^2 / 2\]
+\[ S(t) = \int_0^t (t - t^2/2) dt = t^2/2 - t^3/6 \]
+
+We obtained the analytical solution. Now define one atom with position $r(1, 0, 0)$. At $t=0.5$ its position should be
+
+\[ r(x, t=0.5) = 1 + 0.5^2/2 - 0.5^3/6 = 1 + 5/(8 \cdot 6)\]
+
+In this test the timestep must be small enough to capture the nonlinear changes in the velocity. I achieved approximate equality with $\Delta t = 0.00001$.
+
+{\bf Implementation} --- src/atoms.h, src/verlet.cpp, src/verlet.h, tests/test\_verlet.cpp
 
 \subsection*{First simulation}
 In the first simulation, we don't care about physical units, and just set \( m=1, \sigma=1, \epsilon=1 \). Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), the atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).  
@@ -389,8 +453,6 @@ milestones/06/main.cpp
 \end{itemize}
 
 \subsection*{Heating experiment}
-
-\textcolor{red}{\large\bf At this point I found that total energy was not conserved because I recomputed forces after 2 Verlet step!}
 
 {\bf Equilibration} with Berendsen thermostat is done for the first 100 fs with $\tau_T$ = 100 fs and target temperature 300 K = 27 C.
 

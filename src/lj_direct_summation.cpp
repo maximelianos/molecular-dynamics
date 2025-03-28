@@ -18,7 +18,8 @@ double get_temperature_lj(double e_kin, double nb_atoms) {
     // E_k = 3/2 * N_atoms k_b T =>
     // T = 2/3 * E_k / N_atoms / k_b
 
-    double k_b = 1.38e+4 / 1.66 / 197; // 1.38e-23 / (1 atom mass)
+    // 1 length is Angstrem, 1 energy is electron-volt, 1 mass is gold atom
+    double k_b = 8.614e-5; // eV / Kelvin
     return (2.0 / 3.0) * e_kin / nb_atoms / k_b;
 }
 
@@ -26,6 +27,7 @@ double get_temperature(double e_kin, double nb_atoms) {
     // E_k = 3/2 * N_atoms k_b T =>
     // T = 2/3 * E_k / N_atoms / k_b
 
+    // 1 length is Angstrem, 1 energy is electron-volt, 1 time is femtosecond
     double k_b = 8.614e-5; // eV / Kelvin
     return (2.0 / 3.0) * e_kin / nb_atoms / k_b;
 }

@@ -47,9 +47,9 @@ int main() {
 
     // time step
     double begin_t = 0;
-    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
-    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
-    // 0.1 X 0.05 X 0.01 V 0.005
+    double end_t = 100; //* std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001; //* std::sqrt(m * sigma * sigma / epsilon);
+    // 0.1 bad; 0.05 bad; 0.01 good; 0.005 good;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
 
     std::cout << "time step " << step_t << "\n";
@@ -57,7 +57,7 @@ int main() {
     double last_print_t = 0;
     int print_i = 0;
     Average avg_tot; // compute averages over intervals
-    std::ofstream energy_file("total_energy_01.txt");
+    std::ofstream energy_file("total_energy.txt");
     std::ofstream epot_file("potential_energy.txt");
     std::ofstream ekin_file("kinetic_energy.txt");
 

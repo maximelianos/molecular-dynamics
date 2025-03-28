@@ -8,6 +8,13 @@ ssh fr_mv276@bwunicluster.scc.kit.edu
 
 ======
 
+Milestone 4 compile from terminal:
+
+$ mkdir buildDir; meson setup buildDir --buildtype=release && cd buildDir && meson compile; cd ..
+$ cd ./buildDir/milestones/04 && ./milestone04 && cd ../../..
+
+======
+
 Open-source implementations
 MPICH
 Open MPI
@@ -57,10 +64,19 @@ Milestone 9
 5. t=200 strain=15
 
 10. whisker_large t=300 strain=10
-11. t=300 strain=15
+11. t=300 strain=20
+12. t=300 strain=30
 
-12. whisker_large t=350 strain=10
-13. t=350 strain=15
+13. whisker_large t=350 strain=10
+14. t=350 strain=20
+15. t=350 strain=30
 
-14. t=300 strain=20
-15. t=300 strain=30
+
+
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 10
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 20.0 whisker_large.xyz 11
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 30.0 whisker_large.xyz 12
+
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 13
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 14
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 15
