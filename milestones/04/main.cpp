@@ -47,8 +47,8 @@ int main() {
 
     // time step
     double begin_t = 0;
-    double end_t = 100; //* std::sqrt(m * sigma * sigma / epsilon);
-    double step_t = 0.001; //* std::sqrt(m * sigma * sigma / epsilon);
+    double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
     // 0.1 bad; 0.05 bad; 0.01 good; 0.005 good;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
 

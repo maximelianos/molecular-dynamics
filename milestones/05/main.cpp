@@ -47,7 +47,7 @@ int main() {
     // simulation time
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
-    double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
+    double step_t = 0.001 * std::sqrt(m * sigma * sigma / epsilon);
     double last_print_t = 0;
     double print_freq_t = 1 * std::sqrt(m * sigma * sigma / epsilon);
     int print_i = 0;
@@ -57,7 +57,7 @@ int main() {
     std::ofstream ekin_file("kinetic_energy.txt");
 
     // time for equilibration
-    double equi_t = end_t / 10;
+    double equi_t = end_t / 10; // 5 ok, 10 ok, 20 not ok
 
     std::cout << "time step " << step_t << "\n";
 
@@ -78,8 +78,8 @@ int main() {
         avg_tot.add(e);
 
         // thermostat
-        double target_temp = 0.001;
-        double relaxation_t = end_t / 10;
+        double target_temp = 300; // 300 ok
+        double relaxation_t = end_t;
         if (begin_t < equi_t) {
             relaxation_t = end_t / 100;
         }

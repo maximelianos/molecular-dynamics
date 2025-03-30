@@ -66,9 +66,9 @@
 
 \section{Introduction}
 
-In this project I implemented a Molecular Dynamics simulation in C++ consisting of individual atoms, based on the physics equations for interaction between atoms. The implemented program contains several experiments for testing and analysis of the simulation: generating a cubic lattice or using a precomputed icosahedron cluster; controlling the temperature of the simulation with a thermostat to prevent vaporization; monitoring the potential and kinetic energies; saving the atom positions to a file and visualization; heating the cluster and measuring the melting point and latent heat; running parallel simulation with OpenMPI; stretching a golden whisker and measuring stress.
+In this project I implemented a Molecular Dynamics simulation in C++ consisting of individual atoms, based on the physics equations for interaction between atoms. The implemented program contains several experiments: running simulation on generated cubic lattice or using a precomputed icosahedron cluster; controlling the temperature of the simulation with a thermostat to prevent vaporization; monitoring the potential and kinetic energies; saving the atom positions to a file and visualization; heating the cluster and measuring the melting point and latent heat; running parallel simulation with OpenMPI; stretching a golden whisker and measuring stress.
 
-The theoretical base is present in \hyperref[methods]{methods}, the details of implementation and results in \hyperref[experiments]{experiments}, and \hyperref[conclusion]{conclusion} at the end.
+The theoretical base is present in \hyperref[methods]{methods} section, the details of implementation and results in \hyperref[experiments]{experiments}, and \hyperref[conclusion]{conclusion} at the end.
 
 \section{Methods}
 \label{methods}
@@ -127,12 +127,12 @@ By definition of energy, force is the derivative of energy by position.
 \end{aligned} \right) = \sum_i \cfrac{\partial V}{\partial r_{ik}} {\hat r_{ik}} \text{\ (unit vector)}
 \]
 
-Let's compute for one of the dimensions.
+Let's compute derivative of the potential for one of the dimensions.
 \[
 \cfrac{\partial V_{ij}}{\partial x_k} = \text{(chain rule by vector length)} \cfrac{\partial V_{ij}}{\partial r_{ij}} \cfrac{\partial r_{ij}}{\partial x_k}
 \]
 
-\[ \cfrac{\partial r_{ij}}{\partial x_k} = \cfrac{\partial \sqrt{(x_j-x_i)^2 + \ldots}}{\partial x_k} = (*) \]
+\[ \cfrac{\partial r_{ij}}{\partial x_k} = \cfrac{\partial \sqrt{(x_j-x_i)^2 + (y_j-y_i)^2 + (z_j-z_i)^2  }}{\partial x_k} = (*) \]
 Remember: \( (\sqrt{u})' = \cfrac{1}{2\sqrt{u}} u' \)
 
 \[
@@ -141,18 +141,18 @@ Remember: \( (\sqrt{u})' = \cfrac{1}{2\sqrt{u}} u' \)
 Here is a pair of atoms $i$ and $j$. We want the force for atom $k$. If \(k\neq i\) and \(k\neq j\), the expression is 0.
 
 \[
-(*) = \left( \begin{aligned}
+\cfrac{\partial r_{ij}}{\partial \mat{r_k}} = \left( \begin{aligned}
 	& (x_j - x_i) (\delta_{jk} - \delta_{ik}) / r_{ij} \\
 	& (y_j - y_i) (\delta_{ik} - \delta_{jk}) / r_{ij} \\
 	& (z_j - z_i) (\delta_{ik} - \delta_{jk}) / r_{ij} \\
-\end{aligned} \right) 
+\end{aligned} \right) = (**)
 \]
 
 \[
-k=j \infers (x_k-x_i)(1-0)/r_{ik},\ (*) = {\hat r_{ik}}
+k=j \infers (x_k-x_i)(1-0)/r_{ik},\ (**) = {\hat r_{ik}}
 \]
 \[
-k=i \infers (x_j-x_k)(0-1)/r_{kj},\ (*) = {\hat r_{jk}}
+k=i \infers (x_j-x_k)(0-1)/r_{kj},\ (**) = {\hat r_{jk}}
 \]
 
 When we take the derivative of energy, only the pairs, where one of the atoms is \(k\), are left. The derivative is exactly the same for \(V_{ij}\) and \(V_{ji}\).
@@ -174,11 +174,11 @@ As the molecular dynamics system evolves, potential energy decreases and kinetic
 \[ \lambda = \sqrt{1 + \left(\cfrac{T_0}{T}-1 \right) \cfrac{\Delta t}{\tau} }  \]
 \[ E_k = \cfrac{1}{2} \sum_i m_i v_i^2 = \cfrac{3}{2} N K_b T \infers T = \cfrac{2}{3} \cfrac{E_k}{K_b N} \]
 
-\(T_0\) is target temperature, \(\Delta t = 0.0001 \sqrt{m\sigma^2 / \epsilon} \) from the first simulation, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
+\(T_0\) is target temperature, \(\Delta t \) is simulation timestep, \( \tau \) is relaxation time of the thermostat and should be much larger than the time step.
 
 \subsection*{Embedded Atom Method potential}
 
-The EAM models attraction with the local electron density, and repulsion with a pairwise term. This potential has parameters that must be estimated for each type of atom experimentally, in this report we use gold (Au).
+The EAM models attraction with the local electron density, and repulsion with a pairwise term (developed by Ducastelle \cite{ducastelle1970modules}, Gupta \cite{gupta} and Cleri and Rosato \cite{CleriRosato}). This potential has parameters that must be estimated for each type of atom experimentally, in this report we use gold (Au).
 
 Force is the derivative of energy by position:
 \[
@@ -251,9 +251,9 @@ From this I derive the time unit:
 
 \subsection*{Domain decomposition}
 
-We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. We spawn an MPI process for each subdomain. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than cutoff radius multiplied by 2 for EAM potential.
+We fix the region of simulation and divide it into a regular grid. Size of the region is $[0, L_x] \times [0, L_y] \times [0, L_z]$, for each dimension we divide it into $N_x, N_y, N_z$ subdomains. The computation is parallelized by spawning a process for each subdomain. Each process holds all atoms in its subdomain and the atoms near the border of subdomain (ghost atoms) not further than cutoff radius multiplied by 2 for EAM potential.
 
-The processes have to communicate the atom movement between subdomains and ghost atoms with the neighboring subdomains. Each subdomain has $9+8+9=26$ neighbors in 3D. To avoid pair-wise communication between them, we execute send-receive (Fig.~\ref{fig:domain-communication}):
+The processes have to communicate the atom movement and ghost atoms with the neighboring subdomains. Each subdomain has $9+8+9=26$ neighbors in 3D, communicating between each pair would significantly decrease performance. To avoid pair-wise communication between them, we execute send-receive (Fig.~\ref{fig:domain-communication}) in these directions only:
 
 \begin{enumerate}
 	\item in $x+$ direction
@@ -267,7 +267,7 @@ The processes have to communicate the atom movement between subdomains and ghost
 \begin{figure*}[h!]
 	\centering
 	\includegraphics[width=.5\linewidth]{img/milestone08-domain-communication.jpg}
-	\caption{Each process gets neighbor information without direct communication.}
+	\caption{Each process gets neighbor information without direct communication between all pairs of processes.}
 	\label{fig:domain-communication}
 \end{figure*}
 
@@ -275,17 +275,28 @@ This way it takes 6 steps instead of 26 for each process to get all information 
 
 \subsection*{Stress estimation}
 
-For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix.
+For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix. It includes a sum over all forces acting on the atoms in the subdomain. Because ghost atoms also act on the atoms inside the subdomain, we must include the force produced by them into the sum, but we must exclude the forces that act on the ghost atoms themselves because they are not part of subdomain.
+
+The stress matrix components correspond to different directions. In simulation, we stretch the whisker only in the Z axis, so only $\sigma_{zz}$ is interesting. All other components of the matrix were close to 0 in the simulation. Stress can be computed separately for each atom and then summed.
+
+\[
+\sigma =
+\begin{pmatrix}
+	\sigma_{xx} &\sigma_{xy} &\sigma_{xz}\\
+	\sigma_{yx} &\sigma_{yy} &\sigma_{yz}\\
+	\sigma_{zx} &\sigma_{zy} &\sigma_{zz}\\
+\end{pmatrix}
+\]
 
 \[
 \sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}_{ij} \times \mat{f}^T_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}_{ij} \times \mat{f}^T_{ij},
 \]
 
-where $\sigma\ (3, 3)$ - stress matrix for $xx, xy, \ldots zz$ directions, $V$ - total volume, $\mat{r}_{ij}\ (3, 1)$ - position, $\mat{f}^T_{ij}\ (1, 3)$ - force.
+where total volume $V = L_x L_y L_z$, $\mat{r}_{ij}$ is position, $\mat{f}_{ij}$ is force.
 
-As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from this matrix (in experiments all other entries are near 0). The stress is per-atom, can be computed separately in each subdomain and then summed.
-
-
+% {\bf Outer product operation}
+% \[ C = \mat{a} \times \mat{b}^T, \]
+% where $\mat{a}$ has shape $3 \times 1$, $\mat{b}^T$ has shape $1 \times 3$, $C$ has shape $3 \times 3$.
 
 \clearpage
 
@@ -293,7 +304,7 @@ As we stretch the whisker in the $Z$ axis, I take only $\sigma(3, 3)$ value from
 \label{experiments}
 
 Warning! Copying .xyz files in Meson didn't work for me, so I had to copy them to build directory by hand.
-
+	
 Code is structured in folders:
 \begin{itemize}
 	\item milestones --- CPP sources for simulation executables
@@ -310,7 +321,7 @@ Code is structured in folders:
 I define two atoms:\\
 first with position $r_1(1, 0, 0)$ and acceleration $a_1(1, 0, 0)$,\\
 second with position $r_2(0, 1, 0)$ and acceleration $a_2(0, -0.5, 0)$.\\
-Start velocity is 0 for simplicity. Following the formula, the resulting positions at $t = 10$ should be
+Start velocity is 0 for simplicity. The positions at $t = 10$ should be
 
 \[ r_1(x, t=10) = 1 + 0 + \cfrac{1 \cdot 100}{2} = 51 \]
 \[ r_2(y, t=10) = 1 + 0 - \cfrac{0.5 \cdot 100}{2} = -24 \]
@@ -325,7 +336,7 @@ Acceleration is derivative of velocity, so
 
 \[ a = \cfrac{dv}{dt} \]
 
-For a constant acceleration we use the well known formula \[ a = \frac{v_{end}-v_{start}}{t} \]
+For a constant acceleration we use the well known formula to find velocity \[ a = \frac{v_{end}-v_{start}}{t} \]
 
 But for variable acceleration
 
@@ -338,7 +349,7 @@ Now compute S using my definition of acceleration, with start velocity 0 for sim
 \[ v(t) = \int_0^t (1-t) dt = t - t^2 / 2\]
 \[ S(t) = \int_0^t (t - t^2/2) dt = t^2/2 - t^3/6 \]
 
-We obtained the analytical solution. Now define one atom with position $r(1, 0, 0)$. At $t=0.5$ its position should be
+We obtained the analytical solution. Now define one atom with position $r(1, 0, 0)$. At $t=0.5$ the position should be
 
 \[ r(x, t=0.5) = 1 + 0.5^2/2 - 0.5^3/6 = 1 + 5/(8 \cdot 6)\]
 
@@ -347,17 +358,17 @@ In this test the timestep must be small enough to capture the nonlinear changes 
 {\bf Implementation} --- src/atoms.h, src/verlet.cpp, src/verlet.h, tests/test\_verlet.cpp
 
 \subsection*{First simulation}
-In the first simulation, we don't care about physical units, and just set \( m=1, \sigma=1, \epsilon=1 \). Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), the atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).  
 
-Choice of the time step (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)):
+The goal of this experiment is to monitor the total energy of the system, running the simulation with different time steps. The Lennard-Jones potential was used to compute forces between atoms. Unit system:
 
-\begin{enumerate}
-	\item 0.05 or higher - immediate explosion
-	\item 0.01 - already stable simulation, OVITO shows some atoms evaporate
-	\item 0.001 or 0.0001 - similar result, drift in total energy is less than 0.01 eV. Some atoms still evaporate.
-\end{enumerate}
+\begin{itemize}
+	\item energy - 1 electron-volt
+	\item length - 1 Angstrem
+	\item mass - mass of 1 gold atom 
+	\item time, derived from the above - 142 femtoseconds
+\end{itemize}
 
-The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}.
+The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}. Timesteps above 0.05 caused explosion of the system. With the chosen timesteps, OVITO visualization still showed evaporation of some atoms.
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -376,7 +387,7 @@ milestones/04/main.cpp
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.7\linewidth]{img/milestone04-total.pdf}
-	\caption{With smaller step the simulation is more stable.}
+	\caption{With smaller step the simulation is more stable.\\ Timestep in the legend is in LJ units.\\ Initial atom configuration from file {\bf lj54.xyz}.\\ \( m=1, \sigma=1, \epsilon=1 \). Lennard-Jones time unit is 142 fs.\\ Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).}
 	\label{fig:first_simulation}
 \end{figure*}
 
@@ -398,13 +409,16 @@ milestones/04/main.cpp
 		\resizebox{\columnwidth}{!}{
 			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.jpg}}
 	\end{minipage}
-	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.}
+	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.\\
+	Atom configuration: cube with 6 atoms along each axis, distance between neighbors is $r=2^{1/6}\sigma$.  }
 	\label{fig:first_simulation_ovito}
 \end{figure*}
 
+
+
 I find that two aspects make the simulation successful: {\bf grid step} close to optimum of Lennard-Jones, and {\bf low target temperature} used in thermostat.
 
-I create a cube of atoms of width 6 for this experiment, Fig.~\ref{fig:first_simulation_ovito}. The most stable configuration is where the grid step is $r = 2^{1/6}\sigma$, we know that to be the minimum of Lennard-Jones potential. Experiments with different $r$ behaved very badly.
+, Fig.~\ref{fig:first_simulation_ovito}. The most stable configuration is where the grid step is $r = 2^{1/6}\sigma$, we know that to be the minimum of Lennard-Jones potential. Experiments with different $r$ behaved very badly.
 
 At first I tried a high target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.001 --- no vaporization. For this temperature, I choose Berendsen relaxation time (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)). Initially for $10$ time units I apply relaxation \( \tau_T = 1 \). Then for the whole simulation, \( \tau_T = 10 \) is required to keep the atoms from evaporating. 
 
