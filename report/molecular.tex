@@ -275,9 +275,9 @@ This way it takes 6 steps instead of 26 for each process to get all information 
 
 \subsection*{Stress estimation}
 
-For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix. It requires to compute a sum over all forces acting on the atoms in the subdomain. Because ghost atoms also act on the atoms inside the subdomain, we must include the force produced by them into the sum, but we must exclude the forces that act on the ghost atoms themselves because they are not part of subdomain.
+For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress tensor. It requires to compute a sum over all forces acting on the atoms in the subdomain. Because ghost atoms also act on the atoms inside the subdomain, we must include the force produced by them into the sum, but we must exclude the forces that act on the ghost atoms themselves because they are not part of subdomain.
 
-The stress matrix components correspond to stress in different dimensions. In simulation, we stretch the whisker only in the Z axis, so only $\sigma_{zz}$ is useful. Proving this assumption, all other components of the matrix were close to 0 in the experiment. Stress can be computed separately for each atom and then summed.
+The stress tensor components correspond to stress in different dimensions. In simulation, we stretch the whisker only in the Z axis, so only $\sigma_{zz}$ is useful. Proving this assumption, all other components of the matrix were close to 0 in the experiment. Stress can be computed separately for each atom and then summed.
 
 \[
 \sigma =
@@ -643,7 +643,7 @@ No thermostat is needed for these experiments, as the icosahedron cluster is ver
 	\includegraphics[width=.8\linewidth]{img/milestone08-1proc.pdf}
 	\caption{Parallelized with 1 process.\\
 	Domain size [0, 60Å] $\times$ [0, 60Å] $\times$ [0, 60Å], grid size (1, 1, 1).\\
-	EAM potential cutoff at 9Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
+	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
 	$\Delta t = 10$ fs, total simulation time 10 000 fs, simulation state save interval 100 fs. No thermostat is used.}
 	\label{fig:parallel-1}
 \end{figure*}
@@ -653,7 +653,7 @@ No thermostat is needed for these experiments, as the icosahedron cluster is ver
 	\includegraphics[width=.85\linewidth]{img/milestone08-4proc.pdf}
 	\caption{Parallelized with 4 processes.\\
 	Domain size [0, 60Å] $\times$ [0, 60Å] $\times$ [0, 60Å], grid size (1, 2, 2).\\
-	EAM potential cutoff at 9Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
+	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
 	$\Delta t = 10$ fs, total simulation time 10 000 fs, simulation state save interval 100 fs. No thermostat is used.}
 	\label{fig:parallel-2}
 \end{figure*}
@@ -665,7 +665,7 @@ No thermostat is needed for these experiments, as the icosahedron cluster is ver
 	\includegraphics[width=.85\linewidth]{img/milestone08-8proc.pdf}
 	\caption{Parallelized with 8 processes.\\
 	Domain size [0, 60Å] $\times$ [0, 60Å] $\times$ [0, 60Å], grid size (2, 2, 2).\\
-	EAM potential cutoff at 9Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
+	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf cluster\_3871.xyz}.\\
 	$\Delta t = 10$ fs, total simulation time 10 000 fs, simulation state save interval 100 fs. No thermostat is used.}
 	\label{fig:parallel-3}
 \end{figure*}
@@ -683,43 +683,144 @@ milestones/08/main.cpp
 
 \subsection*{Pulling a gold nanowire}
 
-Here we use a gold rod with periodicity along Z axis. The distance between the end and the periodical beginning of the rod must be on the order of potential optimum, otherwise the system will explode or be disconnected. I equilibrate the temperature using Berendsen thermostat in the beginning of simulation. After that domain scaling along Z axis is applied, which causes strain inside the material.
+In the final experiment we stretch a golden whisker by using a periodical domain along Z axis (Fig.~\ref{fig:whisker-small-defect}). Our objective is to analyze the stress tensor (similar to pressure) depending on the elongation of the whisker under different temperatures, strain rates, and whisker sizes.
 
-I used temperatures 300 and 500 K; deformation length 10 and 20 angstrem. Total duration was 100 000 fs which causes a deformation of $10^{-4}$ A/fs in the first case.
+\subsubsection*{Domain size and grid}
 
-We observe the measured stress force over strain (Fig.~\ref{fig:whisker-300},~\ref{fig:whisker-500}). The stress force was averaged over 5000 fs which allows us to see the clear pattern of defect formation.
+I implemented automatic domain size computation so that I don't have to input it manually. The $L_x$ and $L_y$ domain size can be chosen freely, given a sufficient offset from the domain edge. The whisker files already have at least 5Å offset so it's reasonable to take $[0, max(\mat{r}_i(x)) + 5\text{Å}]$ as domain size for X dimension and similarly for Y dimension. The computed domain sizes for the whiskers are:
 
-For the 300 K room temperature, the faster elongation breaks the wire more significantly, because stress drops much more and doesn't recover with time. The temperature is low, thus the material is more brittle.
+\begin{itemize}
+	\item \verb|whisker_small.xyz|: $L_x$ = 37Å, $L_y$ = 34Å
+	\item \verb|whisker_large.xyz|: $L_x$ = 80Å, $L_y$ = 74Å
+\end{itemize}
 
-For 500 K the situation is much different. Firstly, the stress changes more slowly, the material starts regrouping on lower values of stress (strain=10 A, at t=300 K max=0.0045, while at t=500 K max=0.0035) and also recovers better. Especially for the fast stretching, the rod completely broke only at the end. It looks like with higher temperature the material can flow more freely, but still forms regular solid-like structures locally. That explains that the stress doesn't go completely down.
+The $L_z$ is much harder to set correctly, because the domain is periodical across Z axis, and should simulate an infinitely long whisker. The distance between the end and the periodical beginning of the whisker must be close to the optimum of EAM potential, otherwise the system will explode or disconnect. I tried out different distances, and the domain size $[0, max(\mat{r}_i(z)) + 1\text{Å}]$ worked the best. The following domain size was estimated:
 
-For visualization of defects I found slice operation in OVITO and used Common Neighbor Analysis (Fig.~\ref{fig:whisker-defect}). The atoms have shifted, but preserve the local grid structure, which is natural for low temperatures.
+\begin{itemize}
+	\item \verb|whisker_small.xyz|: $L_z$ = 144.5Å
+	\item \verb|whisker_large.xyz|: $L_z$ = 288.8Å
+\end{itemize}
+
+Domain decomposition is done automatically across Z axis only. Given N processes, the grid size $(N_x, N_y, N_z) = (1, 1, N)$.
+
+\subsubsection*{Stress calculation}
+
+Stress is the tension of the material under external force. It's similar to pressure, measured in Pascal $[f]/[l]^2 = [m]/([t]^2[l])$, the exact unit can be derived for EAM potential but it wasn't required for the report.
+
+\[
+\sigma =
+\begin{pmatrix}
+	\sigma_{xx} &\sigma_{xy} &\sigma_{xz}\\
+	\sigma_{yx} &\sigma_{yy} &\sigma_{yz}\\
+	\sigma_{zx} &\sigma_{zy} &\sigma_{zz}\\
+\end{pmatrix}
+\]
+
+\[
+\sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}_{ij} \times \mat{f}^T_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}_{ij} \times \mat{f}^T_{ij},
+\]
+
+where $V$ is body volume, $\mat{r}_{ij}$ is position, $\mat{f}_{ij}$ is force, $N_G$ is the number of ghost atoms.
+
+By stretching the whisker we are applying a force along Z axis to the plane that is perpendicular to the Z axis, so we are interested only in $\sigma_{zz}$. In simulation other components were close to 0. I computed the stress tensor by summing up the expression in each subdomain and then summing over the subdomains. I used a big averaging window because stress fluctuates a lot.
+
+\subsubsection*{Thermostat strategy}
+Temperature is kept constant using Berendsen thermostat. Like in the thermostat experiment, I set a low relaxation time for a short period to quickly reach the desired temperature and then increase the relaxation time. For all launches I set:
+
+\begin{itemize}
+	\item Equilibration time $\tau_{EQ}$ = 2000 fs
+	\item Relaxation time during equilibration: $\tau_1$ = 500 fs
+	\item Relaxation time after equilibration: $\tau_2$ = 5000 fs
+\end{itemize}
+
+\subsubsection*{Varying temperature and strain}
+
+At room temperature the whisker breaks reasonably fast, so I chose several temperatures close to 300 K, several strain values and computed the stress vs time plot for pairwise combinations of temperature and strain.
+
+\begin{itemize}
+	\item Small whisker: $T$ = 300K, 350K, 400K; total strain is 10Å, 15Å
+	\item Large whisker: $T$ = 300K, 350K; total strain is 20Å, 30Å
+\end{itemize}
+
+\subsubsection*{Visualizing defects}
+
+For visualization of defects in OVITO I used Common Neighbor Analysis and added the slice operation to see the center of the whisker (Fig.~\ref{fig:whisker-small-defect}, Fig.~\ref{fig:whisker-large-defect}). To apply these modifications in OVITO GUI one must select ``Add Modification - Structure identification - common neighbor analysis'', and ``Add Modification - Modification - slice''.
+
+
+\subsubsection*{Discussion}
+
+We observe the stress over time. The stress tensor was averaged over 500 fs which allows us to see clear patterns of defect formation.
+
+For the small whisker (Fig.~\ref{fig:whisker-small}), faster starin breaks the wire more significantly, because stress drops earlier and lower. At higher temperature of 350 K, compared to 300 K, metal is more elastic, it deforms earlier but stress recovers quicker. The plot with same strain and different temperatures shows again that with higher temperature the metal is more elastic.
+
+Similar can be said about the large whisker (Fig.~\ref{fig:whisker-large}), although it oscillates a lot at first. We can see more gradual stress relief for hotter metal.
+
 
 \begin{figure*}[h!]
 	\centering
-	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-10.pdf}
-	\caption{Small whisker, 300 K, elongation by 10 A.}
-	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-20.pdf}
-	\caption{Small whisker, 300 K, elongation by 20 A.}
-	\label{fig:whisker-300}
+	\includegraphics[width=.95\linewidth]{img/milestone09-small.pdf}
+	\caption{Simulation with small whisker. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	Initial domain size [0, 37Å] $\times$ [0, 34Å] $\times$ [0, 144.5Å], grid size (1, 1, 8).\\
+	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_small.xyz}.\\
+	$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
+	Berendsen thermostat $\tau_{EQ}$ = 2000 fs, $\tau_1$ = 500 fs, $\tau_2$ = 5000 fs (see text).
+	}
+	\label{fig:whisker-small}
 \end{figure*}
 
 \begin{figure*}[h!]
 	\centering
-	\includegraphics[width=.85\linewidth]{img/milestone09-small-500-10.pdf}
-	\caption{Small whisker, 500 K, elongation by 10 A.}
-	\includegraphics[width=.85\linewidth]{img/milestone09-small-500-20.pdf}
-	\caption{Small whisker, 500 K, elongation by 20 A.}
-	\label{fig:whisker-500}
+	\includegraphics[width=.95\linewidth]{img/milestone09-large.pdf}
+	\caption{Simulation with large whisker. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+		Initial domain size [0, 80Å] $\times$ [0, 74Å] $\times$ [0, 288.78Å], grid size (1, 1, 80).\\
+		EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_large.xyz}.\\
+		$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
+		Berendsen thermostat $\tau_{EQ}$ = 2000 fs, $\tau_1$ = 500 fs, $\tau_2$ = 5000 fs (see text).
+	}
+	\label{fig:whisker-large}
 \end{figure*}
 
 \begin{figure*}[h!]
 	\centering
 	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-10-pic.png}
-	\caption{Small whisker, 300 K, elongation by 10 A. The rod is sliced in half, in red we see the break point.}
-	\label{fig:whisker-defect}
+	\caption{OVITO visualization of small whisker, 300 K, $\epsilon$ = 10Å,  image at 80 ps. The whisker is sliced in half, in red we see the break points.\\
+	Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	Initial domain size [0, 37Å] $\times$ [0, 34Å] $\times$ [0, 144.5Å], grid size (1, 1, 8).\\
+	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_small.xyz}.\\
+	$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
+	Berendsen thermostat $\tau_{EQ}$ = 2000 fs, $\tau_1$ = 500 fs, $\tau_2$ = 5000 fs (see text).
+	}
+	\label{fig:whisker-small-defect}
 \end{figure*}
 
+\clearpage
+\begin{figure*}[h!]
+	\centering
+	\begin{minipage}{.3\textwidth}
+		\centering
+		% w h w h_clip
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={4.2cm 1.2cm 7.2cm 0.2cm},clip]{img/large-t350-s30-110.png}}
+	\end{minipage}\hfill
+	\begin{minipage}{.3\textwidth}
+		\centering
+		% w h w h_clip
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={4.2cm 1.2cm 7.2cm 0.2cm},clip]{img/large-t350-s30-135.png}}
+	\end{minipage}\hfill
+	\begin{minipage}{.3\textwidth}
+		\centering
+		% w h w h_clip
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={4.2cm 1.2cm 7.2cm 0.2cm},clip]{img/large-t350-s30-170.png}}
+	\end{minipage}
+	\caption{OVITO visualization of large whisker, 350 K, $\epsilon$ = 30Å Images at 60, 70, 80 ps. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+		Initial domain size [0, 80Å] $\times$ [0, 74Å] $\times$ [0, 288.78Å], grid size (1, 1, 80).\\
+		EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_large.xyz}.\\
+		$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
+		Berendsen thermostat $\tau_{EQ}$ = 2000 fs, $\tau_1$ = 500 fs, $\tau_2$ = 5000 fs (see text).
+	}
+	\label{fig:whisker-large-defect}
+\end{figure*}
+
+\clearpage
 
 {\bf Run details}
 \begin{lstlisting}[breaklines]
@@ -727,9 +828,6 @@ cd buildDir/milestones/09
 mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
 sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
 \end{lstlisting}
-
-Domain decomposition is done automatically based on available number of processes.
-For some reason the big whisker fails to run with an error in neighbors "neighbor list not yet computed".
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]

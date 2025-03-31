@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     Average counter_e;
     Average counter_stress;
 
-    double cutoff = 8.0; // 8.0
+    double cutoff = 9.0; // 8.0
 
     domain.enable(atoms);
     std::cout << "rank " << domain.rank() << " atoms " << atoms.nb_local << "\n";
@@ -151,6 +151,8 @@ int main(int argc, char **argv) {
     if (rank == 0) {
         logger = TextLog("energy.txt", "temperature.txt", "stress-" + exp_name + ".txt");
         std::cout << "time step " << step_t << "\n";
+        std::cout << "domain size " << dom_x << " " <<
+            dom_y << " " << begin_strain << "\n";
     }
 
     // loop over time

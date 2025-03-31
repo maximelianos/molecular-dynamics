@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     double temp_sum = 0;
     double e_tot_sum = 0;
 
-    double cutoff = 8.0;
+    double cutoff = 9.0;
 
     domain.enable(atoms);
     std::cout << "rank " << domain.rank() << " atoms " << atoms.nb_local << "\n";
@@ -155,6 +155,7 @@ int main(int argc, char **argv) {
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, global_nb_atoms);
 
+        // berendsen thermostat not needed
         if (begin_t < equi_t) {
             double target_temp = 300;
             double relaxation_t = 1000;
