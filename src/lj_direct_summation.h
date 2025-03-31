@@ -13,20 +13,22 @@
 #include "lj_direct_summation.h"
 
 struct Average {
-  double sum = 0;
-  int n = 0;
+    // hold average for one float value
+    double sum = 0;
+    int n = 0;
 
-  void add(double value) {
-    sum += value;
-    n += 1;
-  }
+    void add(double value) {
+        sum += value;
+        n += 1;
+    }
 
-  double result() {
-    double res = sum / n;
-    sum = 0;
-    n = 0;
-    return res;
-  }
+    double result() {
+        // return average and reset statistics
+        double res = sum / n;
+        sum = 0;
+        n = 0;
+        return res;
+    }
 };
 
 double kinetic_energy(Atoms &atoms, double mass=1.0);

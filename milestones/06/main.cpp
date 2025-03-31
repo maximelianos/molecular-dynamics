@@ -24,6 +24,8 @@
 
 #include <iomanip>
 #include <iostream>
+#include <map>
+#include <vector>
 
 #include "lj_direct_summation.h"
 #include "verlet.h"
@@ -37,19 +39,52 @@ void write_energy(std::ofstream &file, double time, double energy) {
     file << std::setw(8) << time << " " << energy << "\n";
 }
 
+/*
+class MyNeighborList {
+    double _cutoff = 0;
+    double min_x, min_y, min_z, max_x, max_y, max_z;
+    map<int, vector<int>> cells; // i j k, Cx, Cy, Cz
+
+public:
+    void update(const Atoms &atoms, double cutoff) : _cutoff(cutoff) {
+        min_x = atoms.positions(0, Eigen::all).minCoeff();
+        min_y = atoms.positions(1, Eigen::all).minCoeff();
+        min_z = atoms.positions(2, Eigen::all).minCoeff();
+        max_x = atoms.positions(0, Eigen::all).maxCoeff();
+        max_y = atoms.positions(1, Eigen::all).maxCoeff();
+        max_z = atoms.positions(2, Eigen::all).maxCoeff();
+
+        // 
+        //max_x = ceil((max_x - min_x) / cutoff) * cutoff;
+        //max_y = ceil((max_y - min_y) / cutoff) * cutoff;
+        //max_z = ceil((max_z - min_z) / cutoff) * cutoff;
+        pass;
+
+    }
+
+private:
+    vector<int> cell_coors(const Eigen::Array3Xd pos) {
+        return vector<int>({ pos. })
+    }
+}
+*/
+
 int main(int argc, char **argv) {
     // usage: milestone06 n
 
     int n = 6;
-    if (argc == 2)
+    if (argc == 2) {
         n = atoi(argv[1]);
+    }
 
+    // simulation parameters
     double sigma = 2.0;
     double epsilon = 1;
     double m = 1;
 
     Atoms atoms = cubic_lattice(n, sigma);
 
+    // simulation time
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
     double begin_t = 0;
     double step_t = 0.01 * std::sqrt(m * sigma * sigma / epsilon);
@@ -61,7 +96,7 @@ int main(int argc, char **argv) {
     std::ofstream epot_file("potential_energy.txt");
     std::ofstream ekin_file("kinetic_energy.txt");
 
-    double equi_t = end_t / 10;
+    double equi_t = end_t / 5;
     double cutoff = sigma * 3;
 
     NeighborList neighbor_list;
@@ -74,6 +109,7 @@ int main(int argc, char **argv) {
         verlet_step1(atoms, step_t, m);
 
         // compute forces
+        //double e_pot = lj_direct_summation(atoms, epsilon, sigma);
         double e_pot = lj_neighbor_list(atoms, neighbor_list, cutoff, epsilon, sigma);
 
         // Integrator step 2
@@ -86,8 +122,8 @@ int main(int argc, char **argv) {
         avg_tot.add(e);
 
         // thermostat
-        double target_temp = 0.0001;
-        double relaxation_t = end_t / 100;
+        double target_temp = 300;
+        double relaxation_t = end_t;
         if (begin_t < equi_t) {
             relaxation_t = end_t / 100;
             berendsen_thermostat(atoms, t, target_temp, step_t, relaxation_t);

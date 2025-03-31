@@ -32,17 +32,19 @@
 #include "lattice.h"
 
 void write_energy(std::ofstream &file, double time, double energy) {
+    // append energy value to a log file
     file << std::setw(8) << time << " " << energy << "\n";
 }
 
 int main() {
+    // simulation parameters
     int n = 4;
     double sigma = 2;
     double epsilon = 1;
     double m = 1;
 
     // create a cube of width n
-    Atoms atoms = cubic_lattice(n, sigma);
+    Atoms atoms = cubic_lattice(n, sigma*2.0);
 
     // simulation time
     double end_t = 100 * std::sqrt(m * sigma * sigma / epsilon);
@@ -57,7 +59,7 @@ int main() {
     std::ofstream ekin_file("kinetic_energy.txt");
 
     // time for equilibration
-    double equi_t = end_t / 10; // 5 ok, 10 ok, 20 not ok
+    double equi_t = end_t / 5;
 
     std::cout << "time step " << step_t << "\n";
 
@@ -78,7 +80,7 @@ int main() {
         avg_tot.add(e);
 
         // thermostat
-        double target_temp = 300; // 300 ok
+        double target_temp = 300;
         double relaxation_t = end_t;
         if (begin_t < equi_t) {
             relaxation_t = end_t / 100;

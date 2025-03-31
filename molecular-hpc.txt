@@ -1,3 +1,5 @@
+Å
+
 This work was performed on the computational resource bwUniCluster funded by the Ministry of Science, Research and the Arts Baden-Württemberg and the Universities of the State of Baden-Württemberg, Germany, within the framework program bwHPC
 
 
@@ -48,29 +50,33 @@ Milestone 9
 2. t=300 strain=15
 
 3. t=350 strain=10
-mpirun -n 4 --oversubscribe ./milestone09 350.0 10 whisker_small.xyz 3
 4. t=350 strain=15
 
-5. t=200 strain=15
+5. t=400 strain=10
+6. t=400 strain=15
+
+mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
+mpirun -n 4 --oversubscribe ./milestone09 300.0 15 whisker_small.xyz 2
+
+mpirun -n 4 --oversubscribe ./milestone09 350.0 10 whisker_small.xyz 3
+mpirun -n 4 --oversubscribe ./milestone09 350.0 15 whisker_small.xyz 4
+
+mpirun -n 4 --oversubscribe ./milestone09 400.0 10 whisker_small.xyz 5
+mpirun -n 4 --oversubscribe ./milestone09 400.0 15 whisker_small.xyz 6
+
+
 
 whisker_large
-10. t=300 strain=10
-11. t=300 strain=20
+11. t=300 strain=20   ?
 12. t=300 strain=30   ?
 
-13. t=350 strain=10
 14. t=350 strain=20   almost breaks
 15. t=350 strain=30   breaks
 
-
-
-
-rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_large.xyz 10
 rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 20.0 whisker_large.xyz 11
 rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 300.0 30.0 whisker_large.xyz 12
 
-rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 13
-rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 14
+rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 20.0 whisker_large.xyz 14
 rm *out; sbatch run.job ./buildDir/milestones/09/milestone09 350.0 30.0 whisker_large.xyz 15
 
 rm ../traj.zip; zip -r traj.zip traj*xyz stress*txt && mv traj.zip ~

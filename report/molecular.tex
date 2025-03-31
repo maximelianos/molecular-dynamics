@@ -275,9 +275,9 @@ This way it takes 6 steps instead of 26 for each process to get all information 
 
 \subsection*{Stress estimation}
 
-For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix. It includes a sum over all forces acting on the atoms in the subdomain. Because ghost atoms also act on the atoms inside the subdomain, we must include the force produced by them into the sum, but we must exclude the forces that act on the ghost atoms themselves because they are not part of subdomain.
+For the experiment with stretching a golden whisker we need to compute the reaction to strain --- the stress matrix. It requires to compute a sum over all forces acting on the atoms in the subdomain. Because ghost atoms also act on the atoms inside the subdomain, we must include the force produced by them into the sum, but we must exclude the forces that act on the ghost atoms themselves because they are not part of subdomain.
 
-The stress matrix components correspond to different directions. In simulation, we stretch the whisker only in the Z axis, so only $\sigma_{zz}$ is interesting. All other components of the matrix were close to 0 in the simulation. Stress can be computed separately for each atom and then summed.
+The stress matrix components correspond to stress in different dimensions. In simulation, we stretch the whisker only in the Z axis, so only $\sigma_{zz}$ is useful. Proving this assumption, all other components of the matrix were close to 0 in the experiment. Stress can be computed separately for each atom and then summed.
 
 \[
 \sigma =
@@ -292,7 +292,7 @@ The stress matrix components correspond to different directions. In simulation, 
 \sigma = \cfrac{1}{V} \sum_{i<j} \mat{r}_{ij} \times \mat{f}^T_{ij} = \cfrac{1}{V} \sum_i^{N} \sum_{j=i}^{N+N_G} \mat{r}_{ij} \times \mat{f}^T_{ij},
 \]
 
-where total volume $V = L_x L_y L_z$, $\mat{r}_{ij}$ is position, $\mat{f}_{ij}$ is force.
+where $V$ is body volume, $\mat{r}_{ij}$ is position, $\mat{f}_{ij}$ is force, $N_G$ is the number of ghost atoms.
 
 % {\bf Outer product operation}
 % \[ C = \mat{a} \times \mat{b}^T, \]
@@ -318,38 +318,38 @@ Code is structured in folders:
 
 {\bf First test: constant acceleration.} For $m=1.0$, acceleration is equal to force. The movement distance under constant acceleration is well known: \[ S = v_0 t + \cfrac{at^2}{2} \]
 
-I define two atoms:\\
-first with position $r_1(1, 0, 0)$ and acceleration $a_1(1, 0, 0)$,\\
-second with position $r_2(0, 1, 0)$ and acceleration $a_2(0, -0.5, 0)$.\\
+Let's test two cases:\\
+first atom with position $r_1(1, 0, 0)$ and acceleration $a_1(1, 0, 0)$,\\
+second atom with position $r_2(0, 1, 0)$ and acceleration $a_2(0, -0.5, 0)$.\\
 Start velocity is 0 for simplicity. The positions at $t = 10$ should be
 
 \[ r_1(x, t=10) = 1 + 0 + \cfrac{1 \cdot 100}{2} = 51 \]
 \[ r_2(y, t=10) = 1 + 0 - \cfrac{0.5 \cdot 100}{2} = -24 \]
 
-The Verlet timestep in this test can be chosen as large as possible, the computed result always matches the analytical one.
+The Verlet timestep in this test can be chosen as large as possible -- the computed result always matches the analytical one.
 
-{\bf Second test: linear acceleration.} I define acceleration as
+{\bf Second test: linear acceleration.} Let acceleration be a function of time:
 
 \[ a(t) = 1 - t,\; t \in [0, 1] \]
 
-Acceleration is derivative of velocity, so
+Acceleration is derivative of velocity, so:
 
 \[ a = \cfrac{dv}{dt} \]
 
-For a constant acceleration we use the well known formula to find velocity \[ a = \frac{v_{end}-v_{start}}{t} \]
+For a constant acceleration we use the well known formula to find velocity: \[ a = \frac{v_{end}-v_{start}}{t} \]
 
-But for variable acceleration
+But for variable acceleration:
 
 \[ v(t) = \int_0^t a(t) dt + v_0 \]
 \[ S(t) = \int_0^t v(t) dt \]
 \[ S(t) = \int_0^t \left( \int_0^t a(t) dt + v_0 \right) dt\]
 
-Now compute S using my definition of acceleration, with start velocity 0 for simplicity:
+Now compute S using the acceleration expression, with start velocity 0 for simplicity:
 
 \[ v(t) = \int_0^t (1-t) dt = t - t^2 / 2\]
 \[ S(t) = \int_0^t (t - t^2/2) dt = t^2/2 - t^3/6 \]
 
-We obtained the analytical solution. Now define one atom with position $r(1, 0, 0)$. At $t=0.5$ the position should be
+We obtained the analytical solution. Now let's test it on one atom with position $r(1, 0, 0)$. At $t=0.5$ the position should be:
 
 \[ r(x, t=0.5) = 1 + 0.5^2/2 - 0.5^3/6 = 1 + 5/(8 \cdot 6)\]
 
@@ -357,7 +357,7 @@ In this test the timestep must be small enough to capture the nonlinear changes 
 
 {\bf Implementation} --- src/atoms.h, src/verlet.cpp, src/verlet.h, tests/test\_verlet.cpp
 
-\subsection*{First simulation}
+\subsection*{First simulation with Lennard-Jones potential}
 
 The goal of this experiment is to monitor the total energy of the system, running the simulation with different time steps. The Lennard-Jones potential was used to compute forces between atoms. Unit system:
 
@@ -368,7 +368,7 @@ The goal of this experiment is to monitor the total energy of the system, runnin
 	\item time, derived from the above - 142 femtoseconds
 \end{itemize}
 
-The total energy was plotted for different time steps in Fig.~\ref{fig:first_simulation}. Timesteps above 0.05 caused explosion of the system. With the chosen timesteps, OVITO visualization still showed evaporation of some atoms.
+The drift of total energy from initial value was plotted for different time steps in Fig.~\ref{fig:first_simulation}. Timesteps above $0.05 \sqrt{m\sigma^2 / \epsilon}$ caused explosion of the system.
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -387,44 +387,77 @@ milestones/04/main.cpp
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.7\linewidth]{img/milestone04-total.pdf}
-	\caption{With smaller step the simulation is more stable.\\ Timestep in the legend is in LJ units.\\ Initial atom configuration from file {\bf lj54.xyz}.\\ \( m=1, \sigma=1, \epsilon=1 \). Lennard-Jones time unit is 142 fs.\\ Simulation duration is \( 100 \sqrt{m\sigma^2 / \epsilon} \), atom positions are saved each \( 1 \sqrt{m\sigma^2 / \epsilon} \).}
+	\caption{With smaller time step the energy drift is smaller.\\
+		I plot the total energy minus its initial value.\\
+		Time is in Lennard Jones potential units ($[t]$ = 142 fs).\\
+		Timesteps in the legend must be multiplied by $\sqrt{m\sigma^2 / \epsilon}$ to get Lennard Jones time units.\\
+		Initial atom configuration from file {\bf lj54.xyz}.\\
+		Lennard Jones parameters are: $m=1$ mass of a gold atom, $\sigma$ = 1Å, $\epsilon$=1 eV.\\
+		Total simulation time \( 100 \sqrt{m\sigma^2 / \epsilon} \), simulation state save interval \( 1 \sqrt{m\sigma^2 / \epsilon} \).}
 	\label{fig:first_simulation}
 \end{figure*}
+
+\clearpage
 
 
 \subsection*{Berendsen thermostat}
 
-\begin{figure*}[htb]
+\begin{figure*}[h!]
+	\centering
+	\includegraphics[width=.7\linewidth]{img/milestone05-total.pdf}
+	\caption{Choosing the optimal time step for the cube of atoms, which is 0.001 $\sqrt{m\sigma^2 / \epsilon}$ in this case.\\
+		I plot the total energy minus its initial value.\\
+		Time is in Lennard Jones potential units ($[t]$ = 142 fs).\\
+		Timesteps in the legend must be multiplied by $\sqrt{m\sigma^2 / \epsilon}$ to get Lennard Jones time units.\\
+		Initial configuration: cube with 6 atoms along each axis, distance between neighbors is $r=2^{1/6}\sigma$ -- the optimum point of Lennard Jones potential.\\	
+		Lennard Jones parameters are: $m=1$ masses of a gold atom, $\sigma$ = 2Å, $\epsilon$=1eV.\\
+		Total simulation time \( 100 \sqrt{m\sigma^2 / \epsilon} \), simulation state save interval \( 1 \sqrt{m\sigma^2 / \epsilon} \).}
+	\label{fig:total_energy_check}
+\end{figure*}
+
+\begin{figure*}[h!]
 	\centering
 	\begin{minipage}{.3\textwidth}
 		\centering
-		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1.8cm},clip]{img/sim1.jpg}}
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={3.2cm 3.2cm 3.2cm 1.8cm},clip]{img/snap1.png}}
 	\end{minipage}\hfill
 	\begin{minipage}{.3\textwidth}
 		\centering
-		\resizebox{\columnwidth}{!}{\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim2.jpg}}
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={3.2cm 3.2cm 3.2cm 1.8cm},clip]{img/snap2.png}}
 	\end{minipage}\hfill
 	\begin{minipage}{.3\textwidth}
 		\centering
-		\resizebox{\columnwidth}{!}{
-			\includegraphics[trim={1.8cm 1.8cm 2.2cm 1cm},clip]{img/sim3.jpg}}
+		\resizebox{\columnwidth}{!}{\includegraphics[trim={3.2cm 3.2cm 3.2cm 1.8cm},clip]{img/snap3.png}}
 	\end{minipage}
-	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat. Without thermostat, atoms vaporize even with the smallest time step.\\
-	Atom configuration: cube with 6 atoms along each axis, distance between neighbors is $r=2^{1/6}\sigma$.  }
+	\caption{OVITO visualization of a cubic lattice with Berendsen thermostat.\\
+		Initial configuration: cube with 6 atoms along each axis, distance between neighbors is $r=2^{1/6}\sigma$ -- the optimum point of Lennard Jones potential.\\	
+		Time is in Lennard Jones potential units ($[t]$ = 142 fs).\\
+		Lennard Jones parameters are $m=1$, $\sigma$ = 2Å, $\epsilon$=1 eV.\\
+		Total simulation time \( 100 \sqrt{m\sigma^2 / \epsilon} \), simulation state save interval \( 1 \sqrt{m\sigma^2 / \epsilon} \).
+		Visualized at time points 0, 4, and 10 $\sqrt{m\sigma^2 / \epsilon}$.
+	}
 	\label{fig:first_simulation_ovito}
 \end{figure*}
 
+\clearpage
 
+We connect a heat bath, also called a thermostat, to the atomic system to stabilize it. Following tasks should be solved:
 
-I find that two aspects make the simulation successful: {\bf grid step} close to optimum of Lennard-Jones, and {\bf low target temperature} used in thermostat.
+\begin{itemize}
+	\item Find an optimal timestep for the simulation without thermostat. We should take the largest possible value at which the total energy stays constant. Similar to the first simulation, I checked several timesteps and chose $\Delta t = 0.001 \sqrt{m\sigma^2 / \epsilon}$ that caused least total energy drift (Fig.~\ref{fig:total_energy_check}).
+	\item Select a target temperature for the thermostat. I chose room temperature $T_0 = 300$ K.
+	\item Find an optimal relaxation time for the thermostat. It should be much larger than the simulation timestep $\tau \gg \Delta t$ and as large as possible, but low enough for stabilization. For the cubic lattice, I found that with $\tau = 1 \sqrt{m\sigma^2 / \epsilon}$ the target temperature is reached fast enough.
+	\item Use the equilibration strategy: set relaxation time firstly to a small value and increase it afterwards. We need to find the shortest equilibration time $\tau_{EQ}$. I found that at $\tau_{EQ} = 20 \sqrt{m\sigma^2 / \epsilon}$ the target temperature was reached. After that point I set relaxation time $\tau$ to the total duration of the simulation.
+\end{itemize}
 
-, Fig.~\ref{fig:first_simulation_ovito}. The most stable configuration is where the grid step is $r = 2^{1/6}\sigma$, we know that to be the minimum of Lennard-Jones potential. Experiments with different $r$ behaved very badly.
+OVITO visualization of the system is shown in Fig.~\ref{fig:first_simulation_ovito}.
 
-At first I tried a high target temperature: 0.05 --- visualization shows that the atoms are pushed apart into infinity in small groups; 0.001 --- no vaporization. For this temperature, I choose Berendsen relaxation time (multiplied by \( \sqrt{m\sigma^2 / \epsilon} \)). Initially for $10$ time units I apply relaxation \( \tau_T = 1 \). Then for the whole simulation, \( \tau_T = 10 \) is required to keep the atoms from evaporating. 
+{\bf Thermostat implementation test.} Testing is very simple: because Berendsen thermostat modifies the speed of each atom separately, it's enough to test the method on just one atom. Let the initial position of the atom be $r(1, 0, 0)$ and velocity $v(1, 0, 0)$, Lennard Jones potential parameters $m=1, \sigma=1, \epsilon=1$, time step $\Delta t=1$.
 
-In a second experiment I took a lower temperature $0.0001$. With this temperature it's enough to apply the thermostat only in the beginning for $10t$ with relaxation $\tau_T = 1$. After equilibration I can disable the thermostat and the system stays stable.
+First test: if relaxation time $\tau = \Delta t$, the desired temperature $T_0 = 0.5$ must be reached in one step.
 
-Testing the Berendsen implementation is very simple, because it modifies the speed of each atom separately, so it's enough to test the behaviour on just one atom. I tested that the temperature should exponentially approach the desired value, and in case the relaxation time is equal to \(\Delta t\), it should change instantly.
+Second test: temperature should exponentially approach the desired value. If we set $\tau = 10 \Delta t$, after 50 steps the temperature should be within 0.01 from the desired value $T_0 = 1000$. 
+
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -436,17 +469,23 @@ tests/test_thermostat.cpp
 milestones/05/main.cpp
 \end{lstlisting}
 
+\clearpage
 
 \subsection*{Neighbor list}
 
 \begin{figure*}[htb]
 	\centering
 	\includegraphics[width=.8\linewidth]{img/milestone06-time.pdf}
-	\caption{Without neighbor list, time scales quadratically with number of atoms.}
+	\caption{Without neighbor list, time scales quadratically with number of atoms.\\
+	Initial configuration: cube with $n$ atoms along each axis, distance between neighbors is $r=2^{1/6}\sigma$ -- the optimum point of Lennard Jones potential.\\	
+	Lennard Jones parameters are $m=1$, $\sigma$ = 2Å, $\epsilon$=1 eV.\\
+	Total simulation time \( 100 \sqrt{m\sigma^2 / \epsilon} \), simulation state save interval \( 1 \sqrt{m\sigma^2 / \epsilon} \).\\
+	The provided implementation of neighbor lists is used. Cutoff radius is \( 3 \sigma \) to allow speedup, but not miss interactions. Tested on following cube sizes: $3^3=27, 4^3=64, 5^3=125, 6^3=216, 7^3=343, 8^3=512, 9^3=729$.
+	}
 	\label{fig:neighbor}
 \end{figure*}
 
-The provided implementation of neighbor lists is used. Cutoff radius is \( 3 \sigma \) to allow speedup, but not miss interactions. Execution time on clusters of different sizes is compared in Fig.~\ref{fig:neighbor} . Number of atoms: $3^3=27, 4^3=64, 5^3=125, 6^3=216, 7^3=343, 8^3=512$.
+Execution time on clusters of different sizes is compared in Fig.~\ref{fig:neighbor}
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -459,12 +498,10 @@ tests/test_thermostat.cpp
 milestones/06/main.cpp
 \end{lstlisting}
 
-{\bf Run details}
-\begin{itemize}
-	\item Optimization level 3 must be enable before compilation.
-	\item Run: \verb|cd buildDir/milestones/06; time ./milestone06 [n]|
-	\item Plot with \verb|plot/time_lineplot.ipynb|
-\end{itemize}
+{\bf Run details}\\
+Optimization level 3 must be enable before compilation.\\
+Run: \verb|cd buildDir/milestones/06; time ./milestone06 [n]|\\
+Plot with \verb|plot/time_lineplot.ipynb|
 
 \subsection*{Heating experiment}
 
