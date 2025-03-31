@@ -1,0 +1,20 @@
+\subsection*{Lennard Jones potential, time and mass units}
+
+To define a unit system, we need to fix three units. For Lennard Jones we set length to Angstrem. The energy unit is unknown in the lectures, but let's assume it is electron-volts, and mass to one golden atom (in EAM we instead set the time unit).
+
+\begin{itemize}
+	\item length: Å, 1 Angstrem = $10^{-10}$ m
+	\item energy: 1 eV, electron-volts = $1,602 \cdot 10^{-19}$ Joules
+	\item $[E] = [m][l]^2/[t]^2$
+	\item mass of 1 gold atom $[m] = 197 / 6 \cdot 10^{-26}$ kg
+\end{itemize}
+
+From this I derive the time unit:
+
+\begin{center}
+	$[t]^2 = [m][l]^2/[E] =$\\
+	$[m] \cdot \ \text{Å}^2 / \text{eV}$ =\\
+	$197 / 6 \cdot 10^{-26}$ kg $\ \cdot \ 10^{-20}$ meter $\ / \ (1.602 \cdot 10^{-19})$ Joules =\\
+	$\cfrac{197}{6 \cdot 1.602} 10^{-46 + 19} s^2 = 20 \cdot 10^{-27} s^2$\\
+	$[t] = \sqrt{20 \cdot 10^{-27}} s = 1.42 \cdot 10^{-13} s =$ \underline{142 fs}
+\end{center}

@@ -50,7 +50,7 @@
 \parbox{0.333\textwidth}{
 	\begin{flushright}
 		Project report\\[0mm]
-		17.02.2025\\[0mm]
+		31.03.2026\\[0mm]
 	\end{flushright}
 }
 \par\vspace{-5mm}
@@ -228,26 +228,7 @@ We can convert this to g/mol:
 
 In the new units 1 gold atom weighs $196,96 \cdot 103,63$ units of mass.
 
-\subsection*{Lennard Jones potential, time and mass units}
-
-To define a unit system, we need to fix three units. For Lennard Jones we set length to Angstrem, energy to electron-volts, and mass to one golden atom (in EAM we instead set the time unit).
-
-\begin{itemize}
-	\item length: Å, 1 Angstrem = $10^{-10}$ m
-	\item energy: 1 eV, electron-volts = $1,602 \cdot 10^{-19}$ Joules
-	\item $[E] = [m][l]^2/[t]^2$
-	\item mass of 1 gold atom $[m] = 197 / 6 \cdot 10^{-26}$ kg
-\end{itemize}
-
-From this I derive the time unit:
-
-\begin{center}
-	$[t]^2 = [m][l]^2/[E] =$\\
-	$[m] \cdot \ \text{Å}^2 / \text{eV}$ =\\
-	$197 / 6 \cdot 10^{-26}$ kg $\ \cdot \ 10^{-20}$ meter $\ / \ (1.602 \cdot 10^{-19})$ Joules =\\
-	$\cfrac{197}{6 \cdot 1.602} 10^{-46 + 19} s^2 = 20 \cdot 10^{-27} s^2$\\
-	$[t] = \sqrt{20 \cdot 10^{-27}} s = 1.42 \cdot 10^{-13} s =$ \underline{142 fs}
-\end{center}
+\clearpage
 
 \subsection*{Domain decomposition}
 
@@ -314,6 +295,17 @@ Code is structured in folders:
 	\item tests --- CPP tests using Google test framework
 \end{itemize}
 
+\subsubsection*{Compilation}
+\begin{verbatim}
+# compile
+mkdir buildDir; meson setup buildDir --buildtype=release
+cd buildDir && meson compile; cd ..
+# run
+cd ./buildDir/milestones/04 && ./milestone04
+\end{verbatim}
+
+Specific run instructions that differ from this template are shown separately in each experiment.
+
 \subsection*{Velocity-Verlet test}
 
 {\bf First test: constant acceleration.} For $m=1.0$, acceleration is equal to force. The movement distance under constant acceleration is well known: \[ S = v_0 t + \cfrac{at^2}{2} \]
@@ -354,6 +346,8 @@ We obtained the analytical solution. Now let's test it on one atom with position
 \[ \mat{r}(x, t=0.5) = 1 + 0.5^2/2 - 0.5^3/6 = 1 + 5/(8 \cdot 6)\]
 
 In this test the timestep must be small enough to capture the nonlinear changes in the velocity. I achieved approximate equality with $\Delta t = 0.00001$.
+
+\clearpage
 
 {\bf Implementation}
 \begin{lstlisting}[breaklines]
@@ -755,6 +749,22 @@ For the small whisker (Fig.~\ref{fig:whisker-small}), faster starin breaks the w
 
 Similar can be said about the large whisker (Fig.~\ref{fig:whisker-large}), although it oscillates a lot at first. We can see more gradual stress relief for hotter metal.
 
+\subsubsection*{Run details}
+\begin{verbatim}
+cd buildDir/milestones/09
+# local run:
+mpirun -n [n_procs] --oversubscribe ./milestone09
+[temp] [strain] whisker_small.xyz [experiment_name]
+# server run:
+sbatch run.job ./buildDir/milestones/09/milestone09
+[temp] [strain] whisker_large.xyz [experiment_name]
+\end{verbatim}
+
+\subsubsection*{Implementation}
+\begin{lstlisting}[breaklines]
+milestones/09/main.cpp
+\end{lstlisting}
+
 
 \begin{figure*}[h!]
 	\centering
@@ -822,23 +832,10 @@ Similar can be said about the large whisker (Fig.~\ref{fig:whisker-large}), alth
 
 \clearpage
 
-{\bf Run details}
-\begin{lstlisting}[breaklines]
-cd buildDir/milestones/09
-mpirun -n 4 --oversubscribe ./milestone09 300.0 10 whisker_small.xyz 1
-sbatch run.job ./buildDir/milestones/09/milestone09 300.0 10.0 whisker_small.xyz 1
-\end{lstlisting}
-
-{\bf Implementation}
-\begin{lstlisting}[breaklines]
-milestones/09/main.cpp
-\end{lstlisting}
-
-\clearpage
 \section{Conclusion}
 \label{conclusion}
 
-In this report I implemented a program that is capable of running a Molecular Dynamics simulation in parallel on a cluster. The report covers efficient implementation of the simulation using neighbor lists for the interatomic potentials, parallelization for multiple CPUs. The characteristics of materials were measured: energy of system, melting point, latent heat, heat capacity, stress force.
+In this report I presented a physical foundation for a Molecular Dynamics simulation, which includes Velocity-Verlet integrator, Lennard-Jones potential, Berendsen thermostat, Embedded Atom Method potential. I implemented a program that is capable of running a Molecular Dynamics simulation in parallel on a cluster. The report covers efficient implementation of the simulation using neighbor lists for the interatomic potentials, parallelization for multiple CPUs. The characteristics of materials were measured: energy of system, melting point, latent heat, heat capacity, stress tensor.
 
 \newpage
 {\small
