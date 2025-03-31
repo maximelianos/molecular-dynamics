@@ -62,9 +62,25 @@ public:
 
 
 int main(int argc, char **argv) {
+    // usage: ./milestone08 lx ly lz nx ny nz
     MPI_Init(&argc, &argv);
 
-    Domain domain(MPI_COMM_WORLD, {60.0, 60.0, 60.0}, {1, 1, 1}, {0, 0, 0});
+    float lx = 60.0;
+    float ly = 60.0;
+    float lz = 60.0;
+    int nx = 1;
+    int ny = 1;
+    int nz = 1;
+    if (argc >= 7) {
+        lx = atof(argv[1]);
+        ly = atof(argv[2]);
+        lz = atof(argv[3]);
+        nx = atoi(argv[4]);
+        ny = atoi(argv[5]);
+        nz = atoi(argv[6]);
+    }
+
+    Domain domain(MPI_COMM_WORLD, {lx, ly, lz}, {nx, ny, nz}, {0, 0, 0});
     int rank = domain.rank();
 
     double m = 196.96 * 103.63; // g/mol -> [m]
@@ -74,6 +90,7 @@ int main(int argc, char **argv) {
     Atoms atoms(positions);
     for (size_t i = 0; i < atoms.nb_atoms(); i++) {
         Point_t pos_i = atoms.positions(Eigen::all, i);
+        // add offset from 0
         atoms.positions(Eigen::all, i) = pos_i + Eigen::Vector3d(5.0, 5.0, 5.0);
     }
     int global_nb_atoms = atoms.nb_atoms();

@@ -43,7 +43,7 @@ void run_heat_capacity() {
     double m = 196.96 * 103.63; // g/mol -> [m]
 
     // load gold cluster
-    auto [names, positions]{read_xyz("cluster_3871.xyz")}; // 923, 3871
+    auto [names, positions]{read_xyz("cluster_923.xyz")}; // 923, 3871
     Atoms atoms(positions);
 
     // Small cluster
@@ -61,13 +61,13 @@ void run_heat_capacity() {
     // time in femtosec
     double begin_t = 0;
     double end_t = 10000;
-    double step_t = 10;
+    double step_t = 1;
 
     // equilibration phase
     double equi_t = 500;
 
-    double heat_deposit_t = 4000;
-    double print_freq_t = 1000;
+    double heat_deposit_t = 400000; // 4000
+    double print_freq_t = 20;
 
     double last_print_t = 0;
     int print_i = 0;
@@ -94,11 +94,16 @@ void run_heat_capacity() {
     std::cout << "time step " << step_t << "\n";
 
     for (; begin_t < end_t; begin_t += step_t) {
+        // Integrator step 1
         verlet_step1(atoms, step_t, m);
+
         // compute forces between Verlet steps!
         double e_pot = ducastelle(atoms, neighbor_list);
+
+        // Integrator step 2
         verlet_step2(atoms, step_t, m);
 
+        // monitor energy
         double e_kin = kinetic_energy(atoms, m);
         double e = e_pot + e_kin;
         double t = get_temperature(e_kin, atoms.nb_atoms());
@@ -126,8 +131,9 @@ void run_heat_capacity() {
             write_energy(interval_temp_file, begin_t, avg_t);
             //write_xyz(get_traj_filename(), atoms);
 
+            // increase kinetic energy by delta_q
             double delta_q = 20.0;
-            double lambda = std::sqrt(1 + delta_q / e_kin); // add constant heat
+            double lambda = std::sqrt(1 + delta_q / e_kin);
             //atoms.velocities = atoms.velocities * lambda;
 
             last_heat_t = begin_t;
@@ -138,7 +144,11 @@ void run_heat_capacity() {
                       << " e_kin " << std::setw(12) << e_kin
                       << " e_tot " << std::setw(12) << e
                       << " temp " << std::setw(4) << t << "\n";
-            last_print_t = begin_t;
+            // ensure one print per print period
+            last_print_t = floor(begin_t / print_freq_t) * print_freq_t;
+
+            //write_energy(interval_energy_file, begin_t, e);
+            //write_energy(interval_temp_file, begin_t, t);
             //write_xyz(get_traj_filename(), atoms);
 
             // update neighbors
