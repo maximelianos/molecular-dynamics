@@ -50,7 +50,7 @@
 \parbox{0.333\textwidth}{
 	\begin{flushright}
 		Project report\\[0mm]
-		31.03.2026\\[0mm]
+		31.03.2052\\[0mm]
 	\end{flushright}
 }
 \par\vspace{-5mm}
@@ -536,7 +536,7 @@ Latent heat is the energy to transform from solid to liquid state. During meltin
 In the experiment, we need to deposit such an amount of heat that it doesn't disturb the system too much, but reaches the melting point. I chose $\Delta Q$ as 20 eV, 100 eV, and 200 eV for small Mackay cluster, big Mackay cluster and the whisker respectively. I don't use Berendsen thermostat because it makes the experiment meaningless by arbitrarily adding or removing energy.
 
 \subsubsection*{Computing melting point, heat capacity and latent heat}
-I wrote a program to estimate the desired values from the energy-temperature plot.
+I wrote a python script in the plot jupyter notebook to estimate the desired values from the energy-temperature plot.
 
 \begin{itemize}
 	\item Melting point: as the simulation doesn't have truly constant melting temperature, I take the middle point between the end of linear region for solid state and beginning of linear region for liquid state on the energy-temperature plot (Fig.~\ref{fig:heat-makay1},~\ref{fig:heat-makay2},~\ref{fig:heat-whisker}).
@@ -598,7 +598,7 @@ milestones/07/main.cpp
 {\bf Run details}
 \begin{itemize}
 	\item Generate Whisker-6950: \verb|python make_whisker.py| with parameters \verb|radius = 15; size = [14, 10, 50]|
-	\item Run: \verb|cd buildDir/milestones/07|
+	\item Run: \verb|cd buildDir/milestones/07; ./milestone07|
 	\item Logs are saved in \verb|buildDir/milestones/07|
 	\item Plot with \verb|plot/milestone07.ipynb|
 	
@@ -769,7 +769,7 @@ milestones/09/main.cpp
 \begin{figure*}[h!]
 	\centering
 	\includegraphics[width=.95\linewidth]{img/milestone09-small.pdf}
-	\caption{Simulation with small whisker. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	\caption{Simulation with small whisker. Temperature $[T]=K$, total strain $[\epsilon_{tot}]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
 	Initial domain size [0, 37Å] $\times$ [0, 34Å] $\times$ [0, 144.5Å], grid size (1, 1, 8).\\
 	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_small.xyz}.\\
 	$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
@@ -781,7 +781,7 @@ milestones/09/main.cpp
 \begin{figure*}[h!]
 	\centering
 	\includegraphics[width=.95\linewidth]{img/milestone09-large.pdf}
-	\caption{Simulation with large whisker. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	\caption{Simulation with large whisker. Temperature $[T]=K$, total strain $[\epsilon_{tot}]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
 		Initial domain size [0, 80Å] $\times$ [0, 74Å] $\times$ [0, 288.78Å], grid size (1, 1, 80).\\
 		EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_large.xyz}.\\
 		$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
@@ -793,8 +793,8 @@ milestones/09/main.cpp
 \begin{figure*}[h!]
 	\centering
 	\includegraphics[width=.85\linewidth]{img/milestone09-small-300-10-pic.png}
-	\caption{OVITO visualization of small whisker, 300 K, $\epsilon$ = 10Å,  image at 80 ps. The whisker is sliced in half, in red we see the break points.\\
-	Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	\caption{OVITO visualization of small whisker, 300 K, $\epsilon$ = 10Å,  image at $t$ = 80 ps. The whisker is sliced in half, in red we see the break points.\\
+	Temperature $[T]=K$, total strain $[\epsilon_{tot}]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
 	Initial domain size [0, 37Å] $\times$ [0, 34Å] $\times$ [0, 144.5Å], grid size (1, 1, 8).\\
 	EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_small.xyz}.\\
 	$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
@@ -821,7 +821,7 @@ milestones/09/main.cpp
 		% w h w h_clip
 		\resizebox{\columnwidth}{!}{\includegraphics[trim={4.2cm 1.2cm 7.2cm 0.2cm},clip]{img/large-t350-s30-170.png}}
 	\end{minipage}
-	\caption{OVITO visualization of large whisker, 350 K, $\epsilon$ = 30Å Images at 60, 70, 80 ps. Temperature $[t]=K$, total strain $[\epsilon]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
+	\caption{OVITO visualization of large whisker, 350 K, $\epsilon$ = 30Å Images at 60, 70, 80 ps. Temperature $[T]=K$, total strain $[\epsilon_{tot}]$ = Å, stress $\sigma$ is in pressure units in the EAM unit system.\\
 		Initial domain size [0, 80Å] $\times$ [0, 74Å] $\times$ [0, 288.78Å], grid size (1, 1, 80).\\
 		EAM potential cutoff 9Å, ghost atom cutoff 18Å. Initial configuration from file {\bf whisker\_large.xyz}.\\
 		$\Delta t = 10$ fs, total simulation time 100 000 fs, simulation state save interval 500 fs, stress averaging interval is 500 fs.\\
